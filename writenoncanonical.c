@@ -70,14 +70,19 @@ int main(int argc, char** argv)
       exit(-1);
     }
 
+//Establish Logic connection
+
+    uint8_t flag = 0b01111110; //todas as flags teem este valor, slide 10
+    uint8_t address = 0x03; //header do emissor
+    uint8_t control = 0b00000011; //SET ,slide 7
+  //  uint8_t bcc = ?????????;
+
+
     printf("New termios structure set\n");
 
+
+
 //Adicionar caracteres
-    /*
-    for (i = 0; i < 255; i++) {
-      buf[i] = 'a';
-    }
-    */
 
     printf("Please enter a string:\n");
     if (gets(buf) != NULL)
@@ -101,11 +106,12 @@ int main(int argc, char** argv)
       res = read(fd,buffer,255);   /* returns after 5 chars have been input */
       buffer[res]=0;               /* so we can printf... */
       if(buffer[res-1]=='\0'){
-         printf("end of string\n");
+         printf("Confirmed!\n");
+         printf(":%s:%d\n", buffer, res);
         STOP=TRUE;
         break;
       }
-      printf(":%s:%d\n", buffer, res);
+
 
     }
 
