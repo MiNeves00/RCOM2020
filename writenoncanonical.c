@@ -85,19 +85,29 @@ int main(int argc, char** argv)
     else if (ferror(stdin))
       perror("Error");
 
+    buf[strlen(buf)] = '\0';
 
-    /*testing*/
-    buf[25] = '\n';
 
     res = write(fd,buf,255);
     printf("num of char: %d\n", strlen(buf));
     printf("%d bytes written\n", res);
 
 
-  /*
-    O ciclo FOR e as instru��es seguintes devem ser alterados de modo a respeitar
-    o indicado no gui�o
-  */
+   //Leitura da mensagem do receptor
+    char buffer[255];
+    printf("Waiting for confirmation of reception\n");
+    while (STOP==FALSE) {     /* loop for input */
+
+      res = read(fd,buffer,255);   /* returns after 5 chars have been input */
+      buffer[res]=0;               /* so we can printf... */
+      if(buffer[res-1]=='\0'){
+         printf("end of string\n");
+        STOP=TRUE;
+        break;
+      }
+      printf(":%s:%d\n", buffer, res);
+
+    }
 
 
 
