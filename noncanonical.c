@@ -69,26 +69,45 @@ int main(int argc, char** argv)
     }
 
     printf("New termios structure set\n");
-    //Read Input
-    char bufTmp[255];
-    int i = 0;
+
+    //Read Input SET
     while (STOP==FALSE) {     /* loop for input */
 
-      res = read(fd,bufTmp,1);   /* returns after 5 chars have been input */
-      bufTmp[res]=0;               /* so we can printf... */
-      buf[i] = bufTmp[0];
-      if(bufTmp[0]=='\0'){
-         printf("end of string\n");
-        STOP=TRUE;
-        break;
+      res = read(fd,buf,255);   /* returns after 5 chars have been input */
+      printf("Frame SET Received: %d , size: %d\n", 6,res);
+      printf("Buf valor %d", 7);
+      char flag2 = buf[0];
+      char bcc = buf[1];
+      char control = buf[2];
+      char address = buf[3];
+      char flag = buf[4];
+      printf("now!");
+      if(flag != flag2 || flag^address^control != bcc){
+        printf("Error, bytes received don't match with BCC!");
       }
-      printf(":%s:%d\n", bufTmp, res);
-      i++;
+      else {
+        printf("HERE!");
+        //if(control == 0b00000011){
+          printf("SET received!");
+          STOP = TRUE;
+      //  }
+    //    else
+      //    printf("Control camp is different than expected\n");
+      }
+
     }
 
-    printf("Total string: %s\n", buf);
+    //Send UA back
+    char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
+    char addressUA = 0b00000001; //header do emissor, slide 10
+    char controlUA = 0b00000111; //SET ,slide 7
+    char bccUA = flagUA^addressUA^controlUA; //XOR dos bytes anteriores ao mesmo
+    buf[0] = flagUA;
+    buf[1] = bccUA;
+    buf[2] = controlUA;
+    buf[3] = addressUA;
+    buf[4] = flagUA;
 
-    //Confirm reception of Input
     res = write(fd,buf,255);
     printf("num of char: %d\n", strlen(buf));
     printf("%d bytes written\n", res);

@@ -14,6 +14,7 @@
 
 volatile int STOP=FALSE;
 
+
 int main(int argc, char** argv)
 {
     int fd,c, res;
@@ -72,48 +73,49 @@ int main(int argc, char** argv)
 
 //Establish Logic connection
 
-    uint8_t flag = 0b01111110; //todas as flags teem este valor, slide 10
-    uint8_t address = 0x03; //header do emissor
-    uint8_t control = 0b00000011; //SET ,slide 7
-  //  uint8_t bcc = ?????????;
-
+    char flag = 0b01111110; //todas as flags teem este valor, slide 10
+    char address = 0b00000011; //header do emissor, slide 10
+    char control = 0b00000011; //SET ,slide 7
+    char bcc = flag^address^control; //XOR dos bytes anteriores ao mesmo
+    buf[0] = flag;
+    buf[1] = bcc;
+    buf[2] = control;
+    buf[3] = address;
+    buf[4] = flag;
 
     printf("New termios structure set\n");
 
-
-
-//Adicionar caracteres
-
-    printf("Please enter a string:\n");
-    if (gets(buf) != NULL)
-      printf("The string is: %s\n", buf);
-    else if (ferror(stdin))
-      perror("Error");
-
-    buf[strlen(buf)] = '\0';
-
-
     res = write(fd,buf,255);
-    printf("num of char: %d\n", strlen(buf));
-    printf("%d bytes written\n", res);
+    printf("Frame SET: %s , size: %d\n", buf,res);
+
+  printf("\n");
 
 
-   //Leitura da mensagem do receptor
-    char buffer[255];
-    printf("Waiting for confirmation of reception\n");
-    while (STOP==FALSE) {     /* loop for input */
-
-      res = read(fd,buffer,255);   /* returns after 5 chars have been input */
-      buffer[res]=0;               /* so we can printf... */
-      if(buffer[res-1]=='\0'){
-         printf("Confirmed!\n");
-         printf(":%s:%d\n", buffer, res);
-        STOP=TRUE;
-        break;
-      }
 
 
-    }
+   //Leitura da mensagem do receptor UA
+   while (STOP==FALSE) {     /* loop for input */
+
+     res = read(fd,buf,255);   /* returns after 5 chars have been input */
+     printf("\n\nFrame UA Received: %s , size: %d\n", buf,res);
+     char flag2UA = buf[0];
+     char bccUA = buf[1];
+     char controlUA = buf[2];
+     char addressUA = buf[3];
+     char flagUA = buf[4];
+     if(flagUA != flag2UA || flagUA^addressUA^controlUA != bccUA){
+       printf("Error, bytes received don't match with BCC!");
+     } else {
+       if(controlUA == 0b00000111){
+         printf("UA received!");
+         STOP = TRUE;
+       }
+       else
+         printf("Control camp is different than expected\n");
+
+     }
+
+   }
 
 
 
