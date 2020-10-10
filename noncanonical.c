@@ -11,6 +11,18 @@
 #define FALSE 0
 #define TRUE 1
 
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0')
+
+
 volatile int STOP=FALSE;
 
 int main(int argc, char** argv)
@@ -68,51 +80,60 @@ int main(int argc, char** argv)
       exit(-1);
     }
 
-    printf("New termios structure set\n");
+    printf("%s\n","New Termios Structure set");
 
     //Read Input SET
     while (STOP==FALSE) {     /* loop for input */
+      printf("%s\n", "Waiting for Input...");
+      res = read(fd,buf,40);   /* returns after 5 chars have been input */
+    //  STOP = TRUE;
+      for (size_t i = 0; i < 5; i++) {
+        printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+      }
+      printf("\n%s\n", "cheking for errors...");
 
-      res = read(fd,buf,255);   /* returns after 5 chars have been input */
-      printf("Frame SET Received: %d , size: %d\n", 6,res);
-      printf("Buf valor %d", 7);
-      char flag2 = buf[0];
-      char bcc = buf[1];
-      char control = buf[2];
-      char address = buf[3];
-      char flag = buf[4];
-      printf("now!");
-      if(flag != flag2 || flag^address^control != bcc){
-        printf("Error, bytes received don't match with BCC!");
-      }
-      else {
-        printf("HERE!");
-        //if(control == 0b00000011){
-          printf("SET received!");
+       char flag2 = buf[4];
+       char bcc = buf[3];
+       char control = buf[2];
+       char address = buf[1];
+       char flag = buf[0];
+      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag));
+      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(address));
+      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(control));
+      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bcc));
+      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2));
+
+      if(flag != flag2 || (flag^address^control) != bcc){
+         printf("\nError, bytes received don't match with BCC!\n");
+       }
+       else {
+         if(control == 0b00000011){
+           printf("SET received!\n");
           STOP = TRUE;
-      //  }
-    //    else
-      //    printf("Control camp is different than expected\n");
-      }
+         }
+        else
+          printf("\nControl camp is different than expected\n");
+       }
 
     }
 
     //Send UA back
+    printf("\n%s\n", "Sending UA back...");
     char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
     char addressUA = 0b00000001; //header do emissor, slide 10
     char controlUA = 0b00000111; //SET ,slide 7
     char bccUA = flagUA^addressUA^controlUA; //XOR dos bytes anteriores ao mesmo
-    buf[0] = flagUA;
-    buf[1] = bccUA;
-    buf[2] = controlUA;
-    buf[3] = addressUA;
     buf[4] = flagUA;
+    buf[3] = bccUA;
+    buf[2] = controlUA;
+    buf[1] = addressUA;
+    buf[0] = flagUA;
+    for (size_t i = 0; i < 5; i++) {
+      printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+    }
 
-    res = write(fd,buf,255);
-    printf("num of char: %d\n", strlen(buf));
-    printf("%d bytes written\n", res);
-
-
+    res = write(fd,buf,40);
+    printf("%s\n", "\nUA sent!");
 
 
     sleep(2);

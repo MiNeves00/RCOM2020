@@ -12,6 +12,18 @@
 #define FALSE 0
 #define TRUE 1
 
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0')
+
+
 volatile int STOP=FALSE;
 
 
@@ -72,50 +84,65 @@ int main(int argc, char** argv)
     }
 
 //Establish Logic connection
+    printf("New termios structure set\n");
 
     char flag = 0b01111110; //todas as flags teem este valor, slide 10
     char address = 0b00000011; //header do emissor, slide 10
     char control = 0b00000011; //SET ,slide 7
     char bcc = flag^address^control; //XOR dos bytes anteriores ao mesmo
-    buf[0] = flag;
-    buf[1] = bcc;
-    buf[2] = control;
-    buf[3] = address;
     buf[4] = flag;
+    buf[3] = bcc;
+    buf[2] = control;
+    buf[1] = address;
+    buf[0] = flag;
 
-    printf("New termios structure set\n");
 
-    res = write(fd,buf,255);
-    printf("Frame SET: %s , size: %d\n", buf,res);
+    printf("%s\n", "Sending SET...");
+    for (size_t i = 0; i < 5; i++) {
+      printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+    }
+    res = write(fd,buf,40);
 
-  printf("\n");
+    printf("\n");
 
 
 
 
    //Leitura da mensagem do receptor UA
    while (STOP==FALSE) {     /* loop for input */
+     printf("\n%s\n", "Waiting for UA...");
+     res = read(fd,buf,40);   /* returns after 5 chars have been input */
 
-     res = read(fd,buf,255);   /* returns after 5 chars have been input */
-     printf("\n\nFrame UA Received: %s , size: %d\n", buf,res);
-     char flag2UA = buf[0];
-     char bccUA = buf[1];
-     char controlUA = buf[2];
-     char addressUA = buf[3];
-     char flagUA = buf[4];
-     if(flagUA != flag2UA || flagUA^addressUA^controlUA != bccUA){
-       printf("Error, bytes received don't match with BCC!");
-     } else {
-       if(controlUA == 0b00000111){
-         printf("UA received!");
-         STOP = TRUE;
-       }
-       else
-         printf("Control camp is different than expected\n");
-
+     for (size_t i = 0; i < 5; i++) {
+       printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
      }
+      printf("\n%s\n", "cheking for errors...");
+
+      char flag2UA = buf[4];
+      char bccUA = buf[3];
+      char controlUA = buf[2];
+      char addressUA = buf[1];
+      char flagUA = buf[0];
+     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flagUA));
+     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(addressUA));
+     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(controlUA));
+     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bccUA));
+     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2UA));
+
+     if(flagUA != flag2UA || (flagUA^addressUA^controlUA) != bccUA){
+        printf("Error, bytes received don't match with BCC!\n");
+      }
+      else {
+        if(controlUA == 0b00000111){
+          printf("UA received!\n");
+         STOP = TRUE;
+        }
+       else
+         printf("Control camp is different than expected!\n");
+      }
 
    }
+
 
 
 
