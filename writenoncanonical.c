@@ -26,6 +26,7 @@
 
 volatile int STOP=FALSE;
 
+int readUA(int fd);
 
 int main(int argc, char** argv)
 {
@@ -110,37 +111,8 @@ int main(int argc, char** argv)
 
    //Leitura da mensagem do receptor UA
    while (STOP==FALSE) {     /* loop for input */
-     printf("\n%s\n", "Waiting for UA...");
-     res = read(fd,buf,40);   /* returns after 5 chars have been input */
-
-     for (size_t i = 0; i < 5; i++) {
-       printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-     }
-      printf("\n%s\n", "cheking for errors...");
-
-      char flag2UA = buf[4];
-      char bccUA = buf[3];
-      char controlUA = buf[2];
-      char addressUA = buf[1];
-      char flagUA = buf[0];
-     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flagUA));
-     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(addressUA));
-     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(controlUA));
-     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bccUA));
-     // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2UA));
-
-     if(flagUA != flag2UA || (flagUA^addressUA^controlUA) != bccUA){
-        printf("Error, bytes received don't match with BCC!\n");
-      }
-      else {
-        if(controlUA == 0b00000111){
-          printf("UA received!\n");
-         STOP = TRUE;
-        }
-       else
-         printf("Control camp is different than expected!\n");
-      }
-
+    if(readUA(fd) == 0)
+      STOP=TRUE;
    }
 
 
@@ -157,4 +129,43 @@ int main(int argc, char** argv)
 
     close(fd);
     return 0;
+}
+
+
+int readUA(int fd){
+  char buf[255];
+  printf("\n%s\n", "Waiting for UA...");
+  int res = read(fd,buf,40);   /* returns after 5 chars have been input */
+
+  for (size_t i = 0; i < 5; i++) {
+    printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  }
+   printf("\n%s\n", "cheking for errors...");
+
+   char flag2UA = buf[4];
+   char bccUA = buf[3];
+   char controlUA = buf[2];
+   char addressUA = buf[1];
+   char flagUA = buf[0];
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flagUA));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(addressUA));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(controlUA));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bccUA));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2UA));
+
+  if(flagUA != flag2UA || (flagUA^addressUA^controlUA) != bccUA){
+     printf("Error, bytes received don't match with BCC!\n");
+     return 1;
+   }
+   else {
+     if(controlUA == 0b00000111){
+       printf("UA received!\n");
+      return 0;
+     }
+    else
+      printf("Control camp is different than expected!\n");
+      return 1;
+   }
+
+
 }

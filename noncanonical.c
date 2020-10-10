@@ -25,6 +25,8 @@
 
 volatile int STOP=FALSE;
 
+int readSet(int fd);
+
 int main(int argc, char** argv)
 {
     int fd,c, res;
@@ -84,38 +86,11 @@ int main(int argc, char** argv)
 
     //Read Input SET
     while (STOP==FALSE) {     /* loop for input */
-      printf("%s\n", "Waiting for Input...");
-      res = read(fd,buf,40);   /* returns after 5 chars have been input */
-    //  STOP = TRUE;
-      for (size_t i = 0; i < 5; i++) {
-        printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-      }
-      printf("\n%s\n", "cheking for errors...");
-
-       char flag2 = buf[4];
-       char bcc = buf[3];
-       char control = buf[2];
-       char address = buf[1];
-       char flag = buf[0];
-      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag));
-      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(address));
-      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(control));
-      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bcc));
-      // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2));
-
-      if(flag != flag2 || (flag^address^control) != bcc){
-         printf("\nError, bytes received don't match with BCC!\n");
-       }
-       else {
-         if(control == 0b00000011){
-           printf("SET received!\n");
-          STOP = TRUE;
-         }
-        else
-          printf("\nControl camp is different than expected\n");
-       }
-
+      if(readSet(fd) == 0)
+        STOP=TRUE;
     }
+
+    
 
     //Send UA back
     printf("\n%s\n", "Sending UA back...");
@@ -141,4 +116,44 @@ int main(int argc, char** argv)
     tcsetattr(fd,TCSANOW,&oldtio);
     close(fd);
     return 0;
+}
+
+
+
+
+int readSet(int fd){
+  printf("%s\n", "Waiting for Input...");
+  char buf[255];
+  int res = read(fd,buf,40);   /* returns after 5 chars have been input */
+//  STOP = TRUE;
+  for (size_t i = 0; i < 5; i++) {
+    printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  }
+  printf("\n%s\n", "cheking for errors...");
+
+   char flag2 = buf[4];
+   char bcc = buf[3];
+   char control = buf[2];
+   char address = buf[1];
+   char flag = buf[0];
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(address));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(control));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bcc));
+  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2));
+
+  if(flag != flag2 || (flag^address^control) != bcc){
+     printf("\nError, bytes received don't match with BCC!\n");
+     return 1;
+   }
+   else {
+     if(control == 0b00000011){
+       printf("SET received!\n");
+      return 0;
+     }
+    else
+      printf("\nControl camp is different than expected\n");
+      return 1;
+   }
+
 }
