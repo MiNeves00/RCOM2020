@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
+#include <signal.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -25,6 +26,15 @@
 
 
 volatile int STOP=FALSE;
+
+int alarmFlag=1, nAlarm=0;
+
+void handleAlarm()                   // atende alarme
+{
+	printf("alarme # %d\n", nAlarm);
+	alarmFlag=1;
+	nAlarm++;
+}
 
 int readUA(int fd);
 
@@ -102,18 +112,22 @@ int main(int argc, char** argv)
     for (size_t i = 0; i < 5; i++) {
       printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
     }
-    res = write(fd,buf,40);
 
-    printf("\n");
+    (void) signal(SIGALRM, handleAlarm);
 
+    //Leitura da mensagem do receptor UA
+    while (STOP==FALSE && nAlarm < 3) {     /* loop for input */
+    
+    if(alarmFlag){
+      res = write(fd,buf,40);
+      printf("\n");
+      alarm(3);                 // activa alarme de 3s
+      alarmFlag=0;
+    }
 
-
-
-   //Leitura da mensagem do receptor UA
-   while (STOP==FALSE) {     /* loop for input */
     if(readUA(fd) == 0)
       STOP=TRUE;
-   }
+    }
 
 
 
