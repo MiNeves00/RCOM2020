@@ -27,22 +27,52 @@
 
 volatile int STOP=FALSE;
 
-int alarmFlag=1, nAlarm=0;
+int nAlarm=0;
+int fd;
 
 void handleAlarm()                   // atende alarme
 {
-	printf("alarme # %d\n", nAlarm);
-	alarmFlag=1;
-	nAlarm++;
+  char buf[255];
+
+  if (nAlarm < 3)
+  {
+    char flag = 0b01111110; //todas as flags teem este valor, slide 10
+    char address = 0b00000011; //header do emissor, slide 10
+    char control = 0b00000011; //SET ,slide 7
+    char bcc = flag^address^control; //XOR dos bytes anteriores ao mesmo
+    buf[4] = flag;
+    buf[3] = bcc;
+    buf[2] = control;
+    buf[1] = address;
+    buf[0] = flag;
+
+
+    printf("%s\n", "Sending SET...");
+    for (size_t i = 0; i < 5; i++) {
+      printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+    }
+
+    write(fd,buf,40);
+
+    printf("\nalarme # %d\n", nAlarm+1);
+	  nAlarm++;
+  }
+	else
+  {
+    printf("\nCan't connect\n");
+    exit(1);
+  }
+
+  alarm(3);
 }
 
 int readUA(int fd);
 
 int main(int argc, char** argv)
 {
-    int fd,c, res;
+    int c, res;
     struct termios oldtio,newtio;
-    char buf[255];
+    
     int i, sum = 0, speed = 0;
 
     if ( (argc < 2) ||
@@ -94,39 +124,17 @@ int main(int argc, char** argv)
       exit(-1);
     }
 
-//Establish Logic connection
+    //Establish Logic connection
     printf("New termios structure set\n");
-
-    char flag = 0b01111110; //todas as flags teem este valor, slide 10
-    char address = 0b00000011; //header do emissor, slide 10
-    char control = 0b00000011; //SET ,slide 7
-    char bcc = flag^address^control; //XOR dos bytes anteriores ao mesmo
-    buf[4] = flag;
-    buf[3] = bcc;
-    buf[2] = control;
-    buf[1] = address;
-    buf[0] = flag;
-
-
-    printf("%s\n", "Sending SET...");
-    for (size_t i = 0; i < 5; i++) {
-      printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
 
     (void) signal(SIGALRM, handleAlarm);
 
+    handleAlarm();
+
     //Leitura da mensagem do receptor UA
     while (STOP==FALSE && nAlarm < 3) {     /* loop for input */
-    
-    if(alarmFlag){
-      res = write(fd,buf,40);
-      printf("\n");
-      alarm(3);                 // activa alarme de 3s
-      alarmFlag=0;
-    }
-
-    if(readUA(fd) == 0)
-      STOP=TRUE;
+      if(readUA(fd) == 0)
+        STOP=TRUE;
     }
 
 
@@ -180,6 +188,4 @@ int readUA(int fd){
       printf("Control camp is different than expected!\n");
       return 1;
    }
-
-
 }
