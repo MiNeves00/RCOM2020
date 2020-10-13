@@ -122,10 +122,28 @@ int main(int argc, char** argv)
 
 
 int readUA(int fd){
-  char buf[255];
+  char buf[255], tempBuf[1];
   printf("\n%s\n", "Waiting for UA...");
-  int res = read(fd,buf,40);   /* returns after 5 chars have been input */
+     /* returns after 5 chars have been input */
 
+  int res;
+  if ((res = read(fd, tempBuf, 1)) <= 0)
+    return 1;
+  printf("\nRes: %d\n", res);
+  buf[0] = tempBuf[0];
+  if ((res = read(fd, tempBuf, 1)) <= 0)
+    return 1;
+  buf[1] = tempBuf[0];
+  if ((res = read(fd, tempBuf, 1)) <= 0)
+    return 1;
+  buf[2] = tempBuf[0];
+  if ((res = read(fd, tempBuf, 1)) <= 0)
+    return 1;
+  buf[3] = tempBuf[0];
+  if ((res = read(fd, tempBuf, 1)) <= 0)
+    return 1;
+  buf[4] = tempBuf[0];
+  
   for (size_t i = 0; i < 5; i++) {
     printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
   }
