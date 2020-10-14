@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
     char addressUA = 0b00000001; //header do emissor, slide 10
     char controlUA = 0b00000111; //UA ,slide 7
-    char bccUA = flagUA^addressUA^controlUA; //XOR dos bytes anteriores ao mesmo
+    char bccUA = addressUA^controlUA; //XOR dos bytes anteriores ao mesmo
     buf[4] = flagUA;
     buf[3] = bccUA;
     buf[2] = controlUA;

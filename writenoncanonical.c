@@ -107,6 +107,7 @@ int main(int argc, char** argv)
 
 
 
+
     sleep(2);
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
       perror("tcsetattr");
@@ -122,39 +123,41 @@ int main(int argc, char** argv)
 
 
 int readUA(int fd){
-  char buf[255];
+  char buf[1];
   printf("\n%s\n", "Waiting for UA...");
-  int res = read(fd,buf,255);   /* returns after 5 chars have been input */
+  int stop = 0;
+  while(stop == 0){ //state machine
+   int res = read(fd,buf,1);
 
-  for (size_t i = 0; i < 5; i++) {
-    printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+   if(buf[0] == 0b01111110){ //flag
+      int res = read(fd,buf,1);
+
+      if(buf[0] == 0b00000001){ //address
+        int res = read(fd,buf,1);
+
+        if(buf[0] == 0b00000111){ //control
+          int res = read(fd,buf,1);
+
+          if(buf[0] == 0b00000001^0b00000111){ //bcc
+            int res = read(fd,buf,1);
+
+            if(buf[0] == 0b01111110){ //final flag
+              stop = 1;
+            } else
+                printf("Not the correct final flag\n");
+
+          } else
+              printf("Not the correct bcc\n");
+        } else
+            printf("Not the correct control\n");
+      } else
+          printf("Not the correct address\n");
+   } 
+
   }
-   printf("\n%s\n", "cheking for errors...");
 
-   char flag2UA = buf[4];
-   char bccUA = buf[3];
-   char controlUA = buf[2];
-   char addressUA = buf[1];
-   char flagUA = buf[0];
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flagUA));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(addressUA));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(controlUA));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bccUA));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2UA));
-
-  if(flagUA != flag2UA || (flagUA^addressUA^controlUA) != bccUA){
-     printf("Error, bytes received don't match with BCC!\n");
-     return 1;
-   }
-   else {
-     if(controlUA == 0b00000111){
-       printf("UA received!\n");
-      return 0;
-     }
-    else
-      printf("Control camp is different than expected!\n");
-      return 1;
-   }
+  printf("UA received sucessfuly!\n");
+  return 0;
 }
 
 void handleAlarm()                   // atende alarme
