@@ -30,10 +30,9 @@ volatile int STOP=FALSE;
 int nAlarm=0;
 int fd;
 
-
+int setConnection();
 void handleAlarm();
-
-int readUA(int fd);
+int readUA();
 
 int main(int argc, char** argv)
 {
@@ -93,21 +92,13 @@ int main(int argc, char** argv)
 
     //Establish Logic connection
     printf("New termios structure set\n");
-
-    (void) signal(SIGALRM, handleAlarm);
-
-    handleAlarm();
-
-    //Leitura da mensagem do receptor UA
-    while (STOP==FALSE && nAlarm < 3) {     /* loop for input */
-      if(readUA(fd) == 0)
-        STOP=TRUE;
+    if(setConnection() == 0){
+      printf("\nConnection SET!\n");
     }
 
 
 
-
-
+    printf("Closing\n");
     sleep(2);
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
       perror("tcsetattr");
@@ -121,8 +112,22 @@ int main(int argc, char** argv)
     return 0;
 }
 
+int setConnection(){
+  (void) signal(SIGALRM, handleAlarm);
 
-int readUA(int fd){
+  handleAlarm();
+
+
+  //Leitura da mensagem do receptor UA
+  while (STOP==FALSE && nAlarm < 3) {     /* loop for input */
+    if(readUA() == 0)
+      STOP=TRUE;
+  }
+  return 0;
+}
+
+
+int readUA(){
   char buf[1];
   printf("\n%s\n", "Waiting for UA...");
   int stop = 0;
