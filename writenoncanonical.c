@@ -143,7 +143,7 @@ int readUA(){
         if(buf[0] == 0b00000111){ //control
           int res = read(fd,buf,1);
 
-          if(buf[0] == 0b00000001^0b00000111){ //bcc
+          if(buf[0] == (0b00000001^0b00000111)){ //bcc
             int res = read(fd,buf,1);
 
             if(buf[0] == 0b01111110){ //final flag
@@ -174,7 +174,7 @@ void handleAlarm()                   // atende alarme
     char flag = 0b01111110; //todas as flags teem este valor, slide 10
     char address = 0b00000011; //header do emissor, slide 10
     char control = 0b00000011; //SET ,slide 7
-    char bcc = flag^address^control; //XOR dos bytes anteriores ao mesmo
+    char bcc = (address^control); //XOR dos bytes anteriores ao mesmo
     buf[4] = flag;
     buf[3] = bcc;
     buf[2] = control;

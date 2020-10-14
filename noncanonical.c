@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
     char addressUA = 0b00000001; //header do emissor, slide 10
     char controlUA = 0b00000111; //UA ,slide 7
-    char bccUA = addressUA^controlUA; //XOR dos bytes anteriores ao mesmo
+    char bccUA = (addressUA^controlUA); //XOR dos bytes anteriores ao mesmo
     buf[4] = flagUA;
     buf[3] = bccUA;
     buf[2] = controlUA;
@@ -122,38 +122,39 @@ int main(int argc, char** argv)
 
 
 int readSet(int fd){
-  printf("%s\n", "Waiting for Input...");
-  char buf[255];
-  int res = read(fd,buf,40);   /* returns after 5 chars have been input */
-//  STOP = TRUE;
-  for (size_t i = 0; i < 5; i++) {
-    printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  char buf[1];
+  printf("\n%s\n", "Waiting for SET...");
+  int stop = 0;
+  while(stop == 0){ //state machine
+   int res = read(fd,buf,1);
+
+   if(buf[0] == 0b01111110){ //flag
+      int res = read(fd,buf,1);
+
+      if(buf[0] == 0b00000011){ //address
+        int res = read(fd,buf,1);
+
+        if(buf[0] == 0b00000011){ //control
+          int res = read(fd,buf,1);
+         
+          if(buf[0] == (0b11111111^0b00000011)){ //bcc
+            int res = read(fd,buf,1);
+
+            if(buf[0] == 0b01111110){ //final flag
+              stop = 1;
+            } else
+                printf("Not the correct final flag\n");
+
+          } else
+              printf("Not the correct bcc\n");
+        } else
+            printf("Not the correct control\n");
+      } else
+          printf("Not the correct address\n");
+   } 
+
   }
-  printf("\n%s\n", "cheking for errors...");
 
-   char flag2 = buf[4];
-   char bcc = buf[3];
-   char control = buf[2];
-   char address = buf[1];
-   char flag = buf[0];
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(address));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(control));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bcc));
-  // printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(flag2));
-
-  if(flag != flag2 || (flag^address^control) != bcc){
-     printf("\nError, bytes received don't match with BCC!\n");
-     return 1;
-   }
-   else {
-     if(control == 0b00000011){
-       printf("SET received!\n");
-      return 0;
-     }
-    else
-      printf("\nControl camp is different than expected\n");
-      return 1;
-   }
-
+  printf("SET received sucessfuly!\n");
+  return 0;
 }
