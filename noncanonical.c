@@ -137,7 +137,7 @@ int readSet(int fd){
         if(buf[0] == 0b00000011){ //control
           int res = read(fd,buf,1);
          
-          if(buf[0] == (0b11111111^0b00000011)){ //bcc
+          if(buf[0] == (0b00000011^0b00000011)){ //bcc
             int res = read(fd,buf,1);
 
             if(buf[0] == 0b01111110){ //final flag
