@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 int readUA(int fd){
   char buf[255];
   printf("\n%s\n", "Waiting for UA...");
-  int res = read(fd,buf,40);   /* returns after 5 chars have been input */
+  int res = read(fd,buf,255);   /* returns after 5 chars have been input */
 
   for (size_t i = 0; i < 5; i++) {
     printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
@@ -179,7 +179,7 @@ void handleAlarm()                   // atende alarme
       printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
     }
 
-    write(fd,buf,40);
+    write(fd,buf,5);
 
     printf("\nalarme # %d\n", nAlarm+1);
 	  nAlarm++;

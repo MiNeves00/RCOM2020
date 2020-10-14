@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     printf("\n%s\n", "Sending UA back...");
     char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
     char addressUA = 0b00000001; //header do emissor, slide 10
-    char controlUA = 0b00000111; //SET ,slide 7
+    char controlUA = 0b00000111; //UA ,slide 7
     char bccUA = flagUA^addressUA^controlUA; //XOR dos bytes anteriores ao mesmo
     buf[4] = flagUA;
     buf[3] = bccUA;
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
       printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
     }
 
-    res = write(fd,buf,40);
+    res = write(fd,buf,5);
     printf("%s\n", "\nUA sent!");
 
 
