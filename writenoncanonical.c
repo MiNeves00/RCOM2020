@@ -92,9 +92,8 @@ int main(int argc, char** argv)
 
     //Establish Logic connection
     printf("New termios structure set\n");
-    if(setConnection() == 0){
-      printf("\nConnection SET!\n");
-    }
+    setConnection();
+    printf("\nConnection SET!\n");
 
 
 

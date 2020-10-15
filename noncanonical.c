@@ -25,6 +25,7 @@
 
 volatile int STOP=FALSE;
 
+int setProtocol(int fd);
 int readSet(int fd);
 
 int main(int argc, char** argv)
@@ -84,31 +85,7 @@ int main(int argc, char** argv)
 
     printf("%s\n","New Termios Structure set");
 
-    //Read Input SET
-    while (STOP==FALSE) {     /* loop for input */
-      if(readSet(fd) == 0)
-        STOP=TRUE;
-    }
-
-    
-
-    //Send UA back
-    printf("\n%s\n", "Sending UA back...");
-    char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
-    char addressUA = 0b00000001; //header do emissor, slide 10
-    char controlUA = 0b00000111; //UA ,slide 7
-    char bccUA = (addressUA^controlUA); //XOR dos bytes anteriores ao mesmo
-    buf[4] = flagUA;
-    buf[3] = bccUA;
-    buf[2] = controlUA;
-    buf[1] = addressUA;
-    buf[0] = flagUA;
-    for (size_t i = 0; i < 5; i++) {
-      printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
-
-    res = write(fd,buf,5);
-    printf("%s\n", "\nUA sent!");
+    setProtocol(fd);
 
 
     sleep(2);
@@ -118,6 +95,37 @@ int main(int argc, char** argv)
     return 0;
 }
 
+
+int setProtocol(int fd){
+  //Read Input SET
+  while (STOP==FALSE) {     /* loop for input */
+  if(readSet(fd) == 0)
+    STOP=TRUE;
+  }
+
+    
+
+  //Send UA back
+  char buf[255];
+  int res;
+  printf("\n%s\n", "Sending UA back...");
+  char flagUA = 0b01111110; //todas as flags teem este valor, slide 10
+  char addressUA = 0b00000001; //header do emissor, slide 10
+  char controlUA = 0b00000111; //UA ,slide 7
+  char bccUA = (addressUA^controlUA); //XOR dos bytes anteriores ao mesmo
+  buf[4] = flagUA;
+  buf[3] = bccUA;
+  buf[2] = controlUA;
+  buf[1] = addressUA;
+  buf[0] = flagUA;
+  for (size_t i = 0; i < 5; i++) {
+    printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  }
+
+  res = write(fd,buf,5);
+  printf("%s\n", "\nUA sent!");
+  return 0;
+}
 
 
 
