@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 
 
     printf("Closing\n");
-    sleep(2);
+   // sleep(1);
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
       perror("tcsetattr");
       exit(-1);
