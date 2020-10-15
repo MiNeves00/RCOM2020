@@ -121,6 +121,9 @@ int main(int argc, char** argv)
 ////////Connect
 
 int setConnection(){
+  nAlarm=0;
+  STOP = FALSE;
+  printf("\nConnecting...\n");
   (void) signal(SIGALRM, sendSetWithAlarm);
 
   sendSetWithAlarm();
@@ -131,7 +134,7 @@ int setConnection(){
     if(readUA() == 0)
       STOP=TRUE;
   }
-  nAlarm=0;
+  
   return 0;
 }
 
@@ -213,7 +216,9 @@ void sendSetWithAlarm()                   // atende alarme
 ////////Disconnect
 
 int disconnect(){
-  printf("Disconecting...\n");
+  nAlarm=0;
+  STOP = FALSE;
+  printf("\nDisconnecting...\n");
   (void) signal(SIGALRM, sendDisconnectWithAlarm);
 
   sendDisconnectWithAlarm();
@@ -224,7 +229,6 @@ int disconnect(){
     if(readDisc() == 0)
       STOP=TRUE;
   }
-  nAlarm = 0;
   return 0;
 }
 
@@ -264,6 +268,40 @@ int sendDisconnectWithAlarm(){
 }
 
 int readDisc(){
+  char buf[1];
+  printf("\n%s\n", "Waiting for Disc...");
+  int stop = 0;
+  while(stop == 0){ //state machine
+   int res = read(fd,buf,1);
 
+   if(buf[0] == 0b01111110){ //flag
+      int res = read(fd,buf,1);
+
+      if(buf[0] == 0b00000001){ //address
+        int res = read(fd,buf,1);
+
+        if(buf[0] == 0b00001011){ //control
+          int res = read(fd,buf,1);
+
+          if(buf[0] == (0b00000001^0b00001011)){ //bcc
+            int res = read(fd,buf,1);
+
+            if(buf[0] == 0b01111110){ //final flag
+              stop = 1;
+            } else
+                printf("Not the correct final flag\n");
+
+          } else
+              printf("Not the correct bcc\n");
+        } else
+            printf("Not the correct control\n");
+      } else
+          printf("Not the correct address\n");
+   } 
+
+  }
+
+  printf("Disc received sucessfuly!\n");
+  return 0;
 }
 
