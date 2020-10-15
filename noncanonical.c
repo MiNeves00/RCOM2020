@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 
   disconnectProtocol(fd);
 
-  sleep(2);
+  //sleep(2);
 
   tcsetattr(fd, TCSANOW, &oldtio);
   close(fd);
