@@ -31,8 +31,12 @@ int nAlarm=0;
 int fd;
 
 int setConnection();
-void handleAlarm();
+void sendSetWithAlarm();
 int readUA();
+
+int disconnect();
+int readDisc();
+int sendDisconnectWithAlarm();
 
 int main(int argc, char** argv)
 {
@@ -96,6 +100,9 @@ int main(int argc, char** argv)
     printf("\nConnection SET!\n");
 
 
+    disconnect();
+
+
 
     printf("Closing\n");
     sleep(2);
@@ -111,10 +118,12 @@ int main(int argc, char** argv)
     return 0;
 }
 
-int setConnection(){
-  (void) signal(SIGALRM, handleAlarm);
+////////Connect
 
-  handleAlarm();
+int setConnection(){
+  (void) signal(SIGALRM, sendSetWithAlarm);
+
+  sendSetWithAlarm();
 
 
   //Leitura da mensagem do receptor UA
@@ -164,7 +173,7 @@ int readUA(){
   return 0;
 }
 
-void handleAlarm()                   // atende alarme
+void sendSetWithAlarm()                   // atende alarme
 {
   char buf[255];
 
@@ -198,5 +207,30 @@ void handleAlarm()                   // atende alarme
   }
 
   alarm(3);
+}
+
+////////Disconnect
+
+int disconnect(){
+  printf("Disconecting...\n");
+  (void) signal(SIGALRM, sendDisconnectWithAlarm);
+
+  sendDisconnectWithAlarm();
+
+
+  //Leitura da mensagem do receptor UA
+  while (STOP==FALSE && nAlarm < 3) {     /* loop for input */
+    if(readDisc() == 0)
+      STOP=TRUE;
+  }
+  return 0;
+}
+
+int sendDisconnectWithAlarm(){
+
+}
+
+int readDisc(){
+
 }
 
