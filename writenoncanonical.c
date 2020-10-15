@@ -131,6 +131,7 @@ int setConnection(){
     if(readUA() == 0)
       STOP=TRUE;
   }
+  nAlarm=0;
   return 0;
 }
 
@@ -223,11 +224,43 @@ int disconnect(){
     if(readDisc() == 0)
       STOP=TRUE;
   }
+  nAlarm = 0;
   return 0;
 }
 
 int sendDisconnectWithAlarm(){
+  char buf[255];
 
+  if (nAlarm < 3)
+  {
+    char flag = 0b01111110; //todas as flags teem este valor, slide 10
+    char address = 0b00000011; //header do emissor, slide 10
+    char control = 0b00001011; //DISC ,slide 7
+    char bcc = (address^control); //XOR dos bytes anteriores ao mesmo
+    buf[4] = flag;
+    buf[3] = bcc;
+    buf[2] = control;
+    buf[1] = address;
+    buf[0] = flag;
+
+
+    printf("%s\n", "Sending DISC...");
+    for (size_t i = 0; i < 5; i++) {
+      printf(" "BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+    }
+
+    write(fd,buf,5);
+
+    printf("\nalarme # %d\n", nAlarm+1);
+	  nAlarm++;
+  }
+	else
+  {
+    printf("\nCan't disconnect\n");
+    exit(1);
+  }
+
+  alarm(3);
 }
 
 int readDisc(){
