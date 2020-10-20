@@ -185,9 +185,10 @@ int readUA()
   return 0;
 }
 
+// Data
 int serialNumber = 0;
 
-int llwrite( int fd, char *buf, int length)
+int stuffAndWrite( int fd, char *buf, int len)
 {
   if (serialNumber == 0)
     serialNumber = 1;
@@ -208,10 +209,10 @@ int llwrite( int fd, char *buf, int length)
 
   newBuf[3] = newBuf[1] ^ newBuf[2];
 
-  int n = 4;
+  int n = 4, len = sizeof(buf);
   char bcc2 = 0;
 
-  for (int i = 1; i < length; i++)
+  for (int i = 4; i < len-3; i++)
   {
     if (buf[i] == 0b01111110 || buf[i] == 0b01111101)
     {

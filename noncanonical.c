@@ -12,6 +12,10 @@
 #define FALSE 0
 #define TRUE 1
 
+#define FLAG 0x7e
+#define ESC 0x7d
+#define STUFF 0x20
+
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)     \
   (byte & 0x80 ? '1' : '0'),     \
@@ -190,6 +194,109 @@ int readSet(int fd)
   }
 
   printf("SET received sucessfuly!\n");
+  return 0;
+}
+
+//Data
+
+int destuff(char * buf)
+{
+  int len = sizeof(buf);
+  char newBuf[len];
+  int n = 0;
+  for (int i = 4; i < len-3; i++)
+  {
+    if (buf[i] == ESC)
+    {
+      if(buf[i+1] == FLAG ^ STUFF)
+        newBuf[n] = FLAG;
+
+      else if (buf[i+1] == ESC ^ STUFF)
+        newBuf[n] = ESC;
+    }
+
+    else
+      newBuf[n] = buf[i];
+    
+    n++;
+  }
+
+  return n;
+}
+
+int Nr = 1;
+
+int readAndDestuff(int fd)
+{
+  char buf[1];
+  char data[255];
+  printf("\n%s\n", "Waiting for DATA...");
+  int stop = 0;
+  while (stop == 0)
+  { //state machine
+    int res = read(fd, buf, 1);
+
+    if (buf[0] == 0b01111110)
+    { //flag
+      int res = read(fd, buf, 1);
+
+      if (buf[0] == 0b00000011)
+      { //address
+        int res = read(fd, buf, 1);
+
+        if (Nr == 1 && buf[0] == 0b01000000 || Nr == 0 && buf[0] == 0)
+        { //control
+          int res = read(fd, buf, 1);
+
+          if (Nr == 1 && buf[0] == (0b00000011 ^ 0b01000000) || Nr == 0 && buf[0] == (0b00000011 ^ 0))
+          { //bcc1
+            int i = 0;
+            
+
+            int res = read(fd, buf, 1);
+
+            if (buf[0] == 0b01111110)
+            { //final flag
+              stop = 1;
+            }
+
+            else
+            {
+              data[i] = buf[0];
+              i++;
+            }
+          }
+          else
+            printf("Not the correct bcc\n");
+        }
+        else
+          printf("Not the correct control\n");
+      }
+      else
+        printf("Not the correct address\n");
+    }
+
+    int n = destuff(data);
+    int bcc2 = 0;
+
+    for (int j = 0; j < n-1; j++)
+    {
+      bcc2 ^= data[j];
+    }
+
+    if (bcc2 == data[n])
+    {
+      return 0; //sucesso
+    }
+
+    else
+    {
+      printf("Not the correct bcc2\n");
+    }
+    
+  }
+
+  printf("DISC received sucessfuly!\n");
   return 0;
 }
 
