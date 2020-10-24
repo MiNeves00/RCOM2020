@@ -95,12 +95,23 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+
+
   //Establish Logic connection
   printf("New termios structure set\n");
   setConnection();
   printf("\nConnection SET!\n");
 
+  char data[255] = {'s','d','b','k','9','4','g'};
+      int size = (sizeof(data)/sizeof(data[0])) + 6; ///DEVIA IMPRIMIR 7+8=13
+    printf("\n%s %d", "Size: ", size);
+  transferData(data);
+
   disconnect();
+
+
+
+
 
   printf("Closing\n");
   // sleep(1);
@@ -114,7 +125,11 @@ int main(int argc, char **argv)
   return 0;
 }
 
-////////Connect
+
+
+
+
+#pragma region ////////Connect
 
 int setConnection()
 {
@@ -217,8 +232,80 @@ void sendSetWithAlarm() // atende alarme
 
   alarm(3);
 }
+#pragma endregion
 
-////////Disconnect
+
+
+////////Transfer Data
+int transferData(char data[255]){
+  nAlarm = 0;
+  STOP = FALSE;
+  printf("\nTransfering Data...\n");
+  (void)signal(SIGALRM, sendDataWithAlarm(data));
+
+  sendDataWithAlarm(data);
+
+  //Leitura da mensagem do receptor UA
+  while (STOP == FALSE && nAlarm < 3)
+  { /* loop for input */
+    //TO DO
+  }
+
+  printf("\nData Transfered with success!");
+  return 0;
+  
+}
+
+
+int sendDataWithAlarm(char data[255]){  //TO DO
+  char buf[255];
+
+  if (nAlarm < 3)
+  {
+    char flag = 0b01111110;         //todas as flags teem este valor, slide 10
+    char address = 0b00000011;      //header do emissor, slide 10
+    char control = 0b00000011;      //SET ,slide 7
+    char bcc1 = (address ^ control); //XOR dos bytes anteriores ao mesmo
+
+    buf[3] = bcc1;
+    buf[2] = control;
+    buf[1] = address;
+    buf[0] = flag;
+    int i;
+    char bcc2; //XOR dos bytes de Data
+    for(i = 0; i < sizeof(data)/sizeof(data[0]); i++){
+      buf[4+i] = data[i];
+      bcc2 ^= data[i];
+    }
+    buf[4+i] = bcc2;
+    buf[4+i+1] = flag;
+
+
+    printf("%s\n", "Sending Data...");
+    int size = (sizeof(data)/sizeof(data[0])) + 6; //ESTA A MANDAR SEMPRE 8 BYTES DE DADOS INDEPENDENTEMENTE
+    printf("\n%s %d", "Size: ", size);
+    for (size_t i = 0; i < size; i++)
+    {
+      printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+    }
+
+    write(fd, buf, size);
+
+    printf("\nalarme # %d\n", nAlarm + 1);
+    nAlarm++;
+  }
+  else
+  {
+    printf("\nCan't connect\n");
+    exit(1);
+  }
+
+  alarm(3);
+}
+
+
+#pragma region ////////Disconnect
+
 
 int disconnect()
 {
@@ -351,3 +438,4 @@ int sendUA()
   printf("%s\n", "\nUA sent!");
   return 0;
 }
+#pragma endregion

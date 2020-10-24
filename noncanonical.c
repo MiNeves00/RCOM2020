@@ -94,6 +94,8 @@ int main(int argc, char **argv)
 
   printf("%s\n", "New Termios Structure set");
 
+
+
   setProtocol(fd);
 
   disconnectProtocol(fd);
