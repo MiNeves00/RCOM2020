@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -102,10 +103,10 @@ int main(int argc, char **argv)
   setConnection();
   printf("\nConnection SET!\n");
 
-  char data[255] = {'s','d','b','k','9','4','g'};
-      int size = (sizeof(data)/sizeof(data[0])) + 6; ///DEVIA IMPRIMIR 7+8=13
-    printf("\n%s %d", "Size: ", size);
+
+  char data[255] = {'s','d','b','k','9','4','g','3','l','4'};
   transferData(data);
+
 
   disconnect();
 
@@ -241,17 +242,12 @@ int transferData(char data[255]){
   nAlarm = 0;
   STOP = FALSE;
   printf("\nTransfering Data...\n");
-  (void)signal(SIGALRM, sendDataWithAlarm(data));
+ // (void)signal(SIGALRM, sendDataWithAlarm(data));
 
   sendDataWithAlarm(data);
 
-  //Leitura da mensagem do receptor UA
-  while (STOP == FALSE && nAlarm < 3)
-  { /* loop for input */
-    //TO DO
-  }
 
-  printf("\nData Transfered with success!");
+  printf("\nData Transfered with success! %d\n", nAlarm);
   return 0;
   
 }
@@ -273,7 +269,7 @@ int sendDataWithAlarm(char data[255]){  //TO DO
     buf[0] = flag;
     int i;
     char bcc2; //XOR dos bytes de Data
-    for(i = 0; i < sizeof(data)/sizeof(data[0]); i++){
+    for(i = 0; i < strlen(data); i++){
       buf[4+i] = data[i];
       bcc2 ^= data[i];
     }
@@ -281,8 +277,8 @@ int sendDataWithAlarm(char data[255]){  //TO DO
     buf[4+i+1] = flag;
 
 
-    printf("%s\n", "Sending Data...");
-    int size = (sizeof(data)/sizeof(data[0])) + 6; //ESTA A MANDAR SEMPRE 8 BYTES DE DADOS INDEPENDENTEMENTE
+    printf("%s", "Sending Data...");
+    int size = strlen(data) + 6; //ESTA A MANDAR SEMPRE 8 BYTES DE DADOS INDEPENDENTEMENTE
     printf("\n%s %d", "Size: ", size);
     for (size_t i = 0; i < size; i++)
     {
@@ -296,7 +292,7 @@ int sendDataWithAlarm(char data[255]){  //TO DO
   }
   else
   {
-    printf("\nCan't connect\n");
+    printf("\nCan't transfer the data\n");
     exit(1);
   }
 
