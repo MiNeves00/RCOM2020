@@ -35,6 +35,7 @@ void sendSetWithAlarm();
 int readUA();
 
 char globalData[255];
+int dataFrameNum = 0;
 int sendDataWithAlarm();
 int readDataResponse();
 
@@ -161,9 +162,12 @@ int readUA()
   char buf[1];
   printf("\n%s\n", "Waiting for UA...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -197,6 +201,9 @@ int readUA()
       else
         printf("Not the correct address\n");
     }
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("UA received sucessfuly!\n");
@@ -242,7 +249,7 @@ void sendSetWithAlarm() // atende alarme
 
 
 
-////////Transfer Data
+#pragma region ////////Transfer Data
 
 int transferData(){
   nAlarm = 0;
@@ -271,7 +278,11 @@ int sendDataWithAlarm(){  //TO DO
   {
     char flag = 0b01111110;         //todas as flags teem este valor, slide 10
     char address = 0b00000011;      //header do emissor, slide 10
-    char control = 0b00000011;      //SET ,slide 7
+    char control;
+    if(dataFrameNum == 0)           //S e N(s), slide 7
+      control = 0b00000000;      
+    else
+      control = 0b01000000;
     char bcc1 = (address ^ control); //XOR dos bytes anteriores ao mesmo
 
     buf[3] = bcc1;
@@ -318,11 +329,13 @@ int readDataResponse(){
   while (stop == 0)
   { //state machine
     //TO DO
+    //Also changes S between current value and the next
   }
 
   printf("Data Response received sucessfuly!\n");
   return 0;
 }
+#pragma endregion
 
 
 
@@ -394,9 +407,12 @@ int readDisc()
   char buf[1];
   printf("\n%s\n", "Waiting for Disc...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -430,6 +446,10 @@ int readDisc()
       else
         printf("Not the correct address\n");
     }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("Disc received sucessfuly!\n");

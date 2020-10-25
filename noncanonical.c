@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   return 0;
 }
 
-///////SET
+#pragma region ///////SET
 
 int setProtocol(int fd)
 {
@@ -153,9 +153,12 @@ int readSet(int fd)
   char buf[1];
   printf("\n%s\n", "Waiting for SET...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -189,13 +192,21 @@ int readSet(int fd)
       else
         printf("Not the correct address\n");
     }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("SET received sucessfuly!\n");
   return 0;
 }
+#pragma endregion
 
-///////DISC
+
+
+
+#pragma region ///////DISC
 
 int disconnectProtocol(int fd)
 {
@@ -231,9 +242,12 @@ int readDisc(int fd)
   char buf[1];
   printf("\n%s\n", "Waiting for DISC...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -267,6 +281,10 @@ int readDisc(int fd)
       else
         printf("Not the correct address\n");
     }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("DISC received sucessfuly!\n");
@@ -317,9 +335,12 @@ int readUA(int fd)
   char buf[1];
   printf("\n%s\n", "Waiting for UA...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -353,8 +374,12 @@ int readUA(int fd)
       else
         printf("Not the correct address\n");
     }
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("UA received sucessfuly!\n");
   return 0;
 }
+#pragma endregion
