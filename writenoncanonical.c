@@ -34,6 +34,10 @@ int setConnection();
 void sendSetWithAlarm();
 int readUA();
 
+char globalData[255];
+int sendDataWithAlarm();
+int readDataResponse();
+
 int disconnect();
 int readDisc();
 int sendDisconnectWithAlarm();
@@ -105,6 +109,7 @@ int main(int argc, char **argv)
 
 
   char data[255] = {'s','d','b','k','9','4','g','3','l','4'};
+  memcpy(globalData, data, 256);
   transferData(data);
 
 
@@ -238,14 +243,21 @@ void sendSetWithAlarm() // atende alarme
 
 
 ////////Transfer Data
-int transferData(char data[255]){
+
+int transferData(){
   nAlarm = 0;
   STOP = FALSE;
   printf("\nTransfering Data...\n");
- // (void)signal(SIGALRM, sendDataWithAlarm(data));
+  (void)signal(SIGALRM, sendDataWithAlarm);
 
-  sendDataWithAlarm(data);
+  sendDataWithAlarm();
 
+    //Leitura da mensagem do receptor UA
+  while (STOP == FALSE && nAlarm < 3)
+  { /* loop for input */
+    if (readDataResponse() == 0)
+      STOP = TRUE;
+  }
 
   printf("\nData Transfered with success! %d\n", nAlarm);
   return 0;
@@ -253,9 +265,8 @@ int transferData(char data[255]){
 }
 
 
-int sendDataWithAlarm(char data[255]){  //TO DO
+int sendDataWithAlarm(){  //TO DO
   char buf[255];
-
   if (nAlarm < 3)
   {
     char flag = 0b01111110;         //todas as flags teem este valor, slide 10
@@ -269,17 +280,17 @@ int sendDataWithAlarm(char data[255]){  //TO DO
     buf[0] = flag;
     int i;
     char bcc2; //XOR dos bytes de Data
-    for(i = 0; i < strlen(data); i++){
-      buf[4+i] = data[i];
-      bcc2 ^= data[i];
+    for(i = 0; i < strlen(globalData); i++){
+      buf[4+i] = globalData[i];
+      bcc2 ^= globalData[i];
     }
     buf[4+i] = bcc2;
     buf[4+i+1] = flag;
 
 
     printf("%s", "Sending Data...");
-    int size = strlen(data) + 6; //ESTA A MANDAR SEMPRE 8 BYTES DE DADOS INDEPENDENTEMENTE
-    printf("\n%s %d", "Size: ", size);
+    int size = strlen(globalData) + 6;
+    printf("\n%s%d ->", "Size: ", size);
     for (size_t i = 0; i < size; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
@@ -289,6 +300,7 @@ int sendDataWithAlarm(char data[255]){  //TO DO
 
     printf("\nalarme # %d\n", nAlarm + 1);
     nAlarm++;
+
   }
   else
   {
@@ -298,6 +310,20 @@ int sendDataWithAlarm(char data[255]){  //TO DO
 
   alarm(3);
 }
+
+int readDataResponse(){
+    char buf[1];
+  printf("\n%s\n", "Waiting for Data Response...");
+  int stop = 0;
+  while (stop == 0)
+  { //state machine
+    //TO DO
+  }
+
+  printf("Data Response received sucessfuly!\n");
+  return 0;
+}
+
 
 
 #pragma region ////////Disconnect
