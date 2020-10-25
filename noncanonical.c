@@ -29,6 +29,11 @@ int setProtocol(int fd);
 int readSet(int fd);
 int sendUA(int fd);
 
+char data[255];
+int dataFrameNum = 0;
+int dataProtocol(int fd);
+int readData(int fd);
+
 int disconnectProtocol(int fd);
 int readDisc(int fd);
 int sendDiscWithAlarm(int fd);
@@ -97,7 +102,7 @@ int main(int argc, char **argv)
 
 
   setProtocol(fd);
-
+  dataProtocol(fd);
   disconnectProtocol(fd);
 
   //sleep(2);
@@ -112,6 +117,7 @@ int main(int argc, char **argv)
 int setProtocol(int fd)
 {
   //Read Input SET
+  STOP = FALSE;
   while (STOP == FALSE)
   { /* loop for input */
     if (readSet(fd) == 0)
@@ -203,7 +209,116 @@ int readSet(int fd)
 }
 #pragma endregion
 
+#pragma region ///////DATA
 
+int dataProtocol(int fd){
+
+  //Read Data and then answer
+  STOP = FALSE;
+  while (STOP == FALSE)
+  { /* loop for input */
+    int res = readData(fd);
+    if (res == -1)       // has already received Disc
+      STOP = TRUE;
+    else if (res == 1){  // bcc2 detected errors
+      //TO DO send REJ
+
+    }
+
+    //TO DO answer normally (ask for next one)
+    
+  }
+
+  return 0;
+}
+
+
+int readData(int fd){ //TO DO parte do Disc
+  memset(data, 0, 255);
+  char buf[1];
+  printf("\n%s\n", "Waiting for Data...");
+  int stop = 0;
+  int flag = 0;
+  int res = 0;
+  int control;
+  char bcc2;
+
+
+  while (stop == 0)
+  { //state machine
+    if(flag == 0)
+      res = read(fd, buf, 1);
+
+    if (buf[0] == 0b01111110)
+    { //flag
+      int res = read(fd, buf, 1);
+
+      if (buf[0] == 0b00000011)
+      { //address
+        int res = read(fd, buf, 1);
+
+        if(dataFrameNum == 0)           //S e N(s), slide 7
+          control = 0b00000000;      
+        else
+          control = 0b01000000;
+
+        if (buf[0] == control)
+        { //control
+          int res = read(fd, buf, 1);
+
+          if (buf[0] == (0b00000011 ^ control))
+          { //bcc1
+            
+            
+            //DATA
+            int receiving = 0;
+            int i = 0;
+            int res = read(fd, buf, 1);
+            bcc2 = buf[0];
+            while(receiving == 0){
+              int res = read(fd, buf, 1);
+              if (buf[0] == 0b01111110){ //final flag
+                receiving = 1;
+                stop = 1;
+              } else {
+                data[i] = bcc2;
+                bcc2 = buf[0];
+              }
+              i++;
+            }
+            int xor = 0;
+            for(int j = 0; j < strlen(data); j++){
+              xor ^= data[j];
+            }
+            if(bcc2 != xor){
+              printf("BCC2 shows errors in data fields!\n");
+              return 1;
+            }
+
+
+
+          }
+          else
+            printf("Not the correct bcc1\n");
+        }
+        else
+          printf("Not the correct control\n");
+      }
+      else
+        printf("Not the correct address\n");
+    }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
+  }
+
+  printf("Data received sucessfuly!\n");
+  return 0;  
+}
+
+
+#pragma endregion
 
 
 #pragma region ///////DISC

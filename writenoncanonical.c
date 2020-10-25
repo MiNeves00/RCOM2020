@@ -272,7 +272,8 @@ int transferData(){
 }
 
 
-int sendDataWithAlarm(){  //TO DO
+int sendDataWithAlarm(){
+  memset(globalData, 0, 255);
   char buf[255];
   if (nAlarm < 3)
   {
