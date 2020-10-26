@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -35,6 +36,11 @@ int fd;
 int setConnection();
 void sendSetWithAlarm();
 int readUA();
+
+char globalData[255];
+int dataFrameNum = 0;
+int sendDataWithAlarm();
+int readDataResponse();
 
 int disconnect();
 int readDisc();
@@ -98,12 +104,29 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+
+
   //Establish Logic connection
   printf("New termios structure set\n");
   setConnection();
   printf("\nConnection SET!\n");
 
+
+  char data[255] = {'s','d','b','k','9','4','g','3','l','4'};
+  memcpy(globalData, data, 256);
+  transferData();
+
+  memset(globalData, 0, 255);
+  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','M'};
+  memcpy(globalData, data2, 256);
+  transferData();
+
+
   disconnect();
+
+
+
+
 
   printf("Closing\n");
   // sleep(1);
@@ -117,7 +140,11 @@ int main(int argc, char **argv)
   return 0;
 }
 
-////////Connect
+
+
+
+
+#pragma region ////////Connect
 
 int setConnection()
 {
@@ -143,9 +170,12 @@ int readUA()
   char buf[1];
   printf("\n%s\n", "Waiting for UA...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -179,6 +209,9 @@ int readUA()
       else
         printf("Not the correct address\n");
     }
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("UA received sucessfuly!\n");
@@ -272,8 +305,149 @@ void sendSetWithAlarm() // atende alarme
 
   alarm(3);
 }
+#pragma endregion
 
-////////Disconnect
+
+
+#pragma region ////////Transfer Data
+
+int transferData(){
+  nAlarm = 0;
+  STOP = FALSE;
+  printf("\nTransfering Data...\n");
+  (void)signal(SIGALRM, sendDataWithAlarm);
+
+  sendDataWithAlarm();
+
+    //Leitura da mensagem do receptor UA
+  while (STOP == FALSE && nAlarm < 3)
+  { /* loop for input */
+    if (readDataResponse() == 0) //Obteve resposta RR cm o dataFrameNum correto
+      STOP = TRUE;
+  }
+
+  printf("\nData Transfered with success!\n");
+  return 0;
+  
+}
+
+
+int sendDataWithAlarm(){
+  
+  char buf[255];
+  if (nAlarm < 3)
+  {
+    char flag = 0b01111110;         //todas as flags teem este valor, slide 10
+    char address = 0b00000011;      //header do emissor, slide 10
+    char control;
+    if(dataFrameNum == 0)           //S e N(s), slide 7
+      control = 0b00000000;      
+    else
+      control = 0b01000000;
+    char bcc1 = (address ^ control); //XOR dos bytes anteriores ao mesmo
+
+    buf[3] = bcc1;
+    buf[2] = control;
+    buf[1] = address;
+    buf[0] = flag;
+    int i;
+    char bcc2 = 0; //XOR dos bytes de Data
+    for(i = 0; i < strlen(globalData); i++){
+      buf[4+i] = globalData[i];
+      bcc2 ^= globalData[i];
+    }
+    buf[4+i] = bcc2;
+    buf[4+i+1] = flag;
+
+
+    printf("%s", "Sending Data...");
+    int size = strlen(globalData) + 6;
+    printf("\n%s%d ->", "Size: ", size);
+    for (size_t i = 0; i < size; i++)
+    {
+      printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+    }
+
+    write(fd, buf, size);
+
+    printf("\nalarme # %d\n", nAlarm + 1);
+    nAlarm++;
+
+  }
+  else
+  {
+    printf("\nCan't transfer the data\n");
+    exit(1);
+  }
+
+  alarm(3);
+}
+
+int readDataResponse(){
+  char buf[1];
+  printf("\n%s\n", "Waiting for Response...");
+  int stop = 0;
+  int flag = 0;
+  int res = 0;
+  while (stop == 0)
+  { //state machine
+    if(flag == 0)
+      res = read(fd, buf, 1);
+
+    if (buf[0] == 0b01111110)
+    { //flag
+      int res = read(fd, buf, 1);
+
+      if (buf[0] == 0b00000001)
+      { //address
+        int res = read(fd, buf, 1);
+
+        char controlRR;
+        dataFrameNum = 1-dataFrameNum;
+        if(dataFrameNum == 0)                 //RR e R = dataFrameNum ,slide 7
+          controlRR = 0b00000101;          
+        else
+          controlRR = 0b10000101;
+
+        if (buf[0] == controlRR)
+        { //control
+          int res = read(fd, buf, 1);
+
+          if (buf[0] == (0b00000001 ^ controlRR))
+          { //bcc
+            int res = read(fd, buf, 1);
+
+            if (buf[0] == 0b01111110)
+            { //final flag
+              stop = 1;
+            }
+            else
+              printf("Not the correct final flag\n");
+          }
+          else
+            printf("Not the correct bcc\n");
+        }
+        else
+          printf("Not the correct control\n");
+      }
+      else
+        printf("Not the correct address\n");
+    }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
+  }
+
+  printf("Response received sucessfuly!\n");
+  return 0;
+}
+#pragma endregion
+
+
+
+#pragma region ////////Disconnect
+
 
 int disconnect()
 {
@@ -340,9 +514,12 @@ int readDisc()
   char buf[1];
   printf("\n%s\n", "Waiting for Disc...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -376,6 +553,10 @@ int readDisc()
       else
         printf("Not the correct address\n");
     }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("Disc received sucessfuly!\n");
@@ -406,3 +587,4 @@ int sendUA()
   printf("%s\n", "\nUA sent!");
   return 0;
 }
+#pragma endregion

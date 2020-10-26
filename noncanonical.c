@@ -33,6 +33,13 @@ int setProtocol(int fd);
 int readSet(int fd);
 int sendUA(int fd);
 
+char data[255];
+int dataFrameNum = 0;
+int duplicate = 0;
+int dataProtocol(int fd);
+int readData(int fd);
+int sendRR(int fd);
+
 int disconnectProtocol(int fd);
 int readDisc(int fd);
 int sendDiscWithAlarm(int fd);
@@ -98,8 +105,10 @@ int main(int argc, char **argv)
 
   printf("%s\n", "New Termios Structure set");
 
-  setProtocol(fd);
 
+
+  setProtocol(fd);
+  dataProtocol(fd);
   disconnectProtocol(fd);
 
   //sleep(2);
@@ -109,11 +118,12 @@ int main(int argc, char **argv)
   return 0;
 }
 
-///////SET
+#pragma region ///////SET
 
 int setProtocol(int fd)
 {
   //Read Input SET
+  STOP = FALSE;
   while (STOP == FALSE)
   { /* loop for input */
     if (readSet(fd) == 0)
@@ -155,9 +165,12 @@ int readSet(int fd)
   char buf[1];
   printf("\n%s\n", "Waiting for SET...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -191,50 +204,56 @@ int readSet(int fd)
       else
         printf("Not the correct address\n");
     }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("SET received sucessfuly!\n");
   return 0;
 }
+#pragma endregion
 
-//Data
+#pragma region ///////DATA
 
-int destuff(char * buf)
-{
-  int len = sizeof(buf);
-  char newBuf[len];
-  int n = 0;
-  for (int i = 4; i < len-3; i++)
-  {
-    if (buf[i] == ESC)
-    {
-      if(buf[i+1] == FLAG ^ STUFF)
-        newBuf[n] = FLAG;
+int dataProtocol(int fd){
 
-      else if (buf[i+1] == ESC ^ STUFF)
-        newBuf[n] = ESC;
+  //Read Data and then answer
+  STOP = FALSE;
+  while (STOP == FALSE)
+  { /* loop for input */
+    int res = readData(fd);
+    if (res == -1)       // has already received Disc
+      STOP = TRUE;
+    else if (res == 1){  // bcc2 detected errors
+      //TO DO send REJ
+
     }
-
-    else
-      newBuf[n] = buf[i];
+    sendRR(fd);
+    //TO DO answer normally (ask for next one)
     
-    n++;
   }
 
-  return n;
+  return 0;
 }
 
-int Nr = 1;
 
-int readAndDestuff(int fd)
-{
+int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo
+  memset(data, 0, 255);
   char buf[1];
-  char data[255];
-  printf("\n%s\n", "Waiting for DATA...");
+  printf("\n%s\n", "Waiting for Data...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
+  int control;
+  char bcc2;
+
+
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -244,30 +263,51 @@ int readAndDestuff(int fd)
       { //address
         int res = read(fd, buf, 1);
 
-        if (Nr == 1 && buf[0] == 0b01000000 || Nr == 0 && buf[0] == 0)
+        if(dataFrameNum == 0)           //S e N(s), slide 7
+          control = 0b00000000;
+          //if(buf[0] == 0b01000000)
+          //  duplicate = 1;      
+        else
+          control = 0b01000000;
+
+        if (buf[0] == control)
         { //control
           int res = read(fd, buf, 1);
 
-          if (Nr == 1 && buf[0] == (0b00000011 ^ 0b01000000) || Nr == 0 && buf[0] == (0b00000011 ^ 0))
+          if (buf[0] == (0b00000011 ^ control))
           { //bcc1
-            int i = 0;
             
-
+            
+            //DATA
+            int receiving = 0;
+            int i = 0;
             int res = read(fd, buf, 1);
-
-            if (buf[0] == 0b01111110)
-            { //final flag
-              stop = 1;
-            }
-
-            else
-            {
-              data[i] = buf[0];
+            bcc2 = buf[0];
+            while(receiving == 0){
+              int res = read(fd, buf, 1);
+              if (buf[0] == 0b01111110){ //final flag
+                receiving = 1;
+                stop = 1;
+              } else {
+                data[i] = bcc2;
+                bcc2 = buf[0];
+              }
               i++;
             }
+            int xor = 0;
+            for(int j = 0; j < strlen(data); j++){
+              xor ^= data[j];
+            }
+            if(bcc2 != xor){
+              printf("BCC2 shows errors in data fields!\n");
+              return 1;
+            }
+
+
+
           }
           else
-            printf("Not the correct bcc\n");
+            printf("Not the correct bcc1\n");
         }
         else
           printf("Not the correct control\n");
@@ -275,32 +315,51 @@ int readAndDestuff(int fd)
       else
         printf("Not the correct address\n");
     }
-
-    int n = destuff(data);
-    int bcc2 = 0;
-
-    for (int j = 0; j < n-1; j++)
-    {
-      bcc2 ^= data[j];
-    }
-
-    if (bcc2 == data[n])
-    {
-      return 0; //sucesso
-    }
-
-    else
-    {
-      printf("Not the correct bcc2\n");
-    }
     
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
-  printf("DISC received sucessfuly!\n");
+  printf("Data received sucessfuly!\n");
+  return 0;  
+}
+
+
+int sendRR(int fd){
+  //Send RR back
+  char buf[255];
+  int res;
+  printf("\n%s\n", "Sending RR back...");
+  char flagRR = 0b01111110;             //todas as flags teem este valor, slide 10
+  char addressRR = 0b00000001;          //header do emissor, slide 10
+  char controlRR;
+  dataFrameNum = 1-dataFrameNum;
+  if(dataFrameNum == 0)                 //RR e R = dataFrameNum ,slide 7
+    controlRR = 0b00000101;          
+  else
+    controlRR = 0b10000101;
+  char bccRR = (addressRR ^ controlRR); //XOR dos bytes anteriores ao mesmo
+  buf[4] = flagRR;
+  buf[3] = bccRR;
+  buf[2] = controlRR;
+  buf[1] = addressRR;
+  buf[0] = flagRR;
+  for (size_t i = 0; i < 5; i++)
+  {
+    printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  }
+
+  res = write(fd, buf, 5);
+  printf("\nRR with R = %d sent!\n", dataFrameNum);
   return 0;
 }
 
-///////DISC
+
+#pragma endregion
+
+
+#pragma region ///////DISC
 
 int disconnectProtocol(int fd)
 {
@@ -336,9 +395,12 @@ int readDisc(int fd)
   char buf[1];
   printf("\n%s\n", "Waiting for DISC...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -372,6 +434,10 @@ int readDisc(int fd)
       else
         printf("Not the correct address\n");
     }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("DISC received sucessfuly!\n");
@@ -422,9 +488,12 @@ int readUA(int fd)
   char buf[1];
   printf("\n%s\n", "Waiting for UA...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    int res = read(fd, buf, 1);
+    if(flag == 0)
+      res = read(fd, buf, 1);
 
     if (buf[0] == 0b01111110)
     { //flag
@@ -458,8 +527,12 @@ int readUA(int fd)
       else
         printf("Not the correct address\n");
     }
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
   printf("UA received sucessfuly!\n");
   return 0;
 }
+#pragma endregion
