@@ -35,6 +35,7 @@ int duplicate = 0;
 int dataProtocol(int fd);
 int readData(int fd);
 int sendRR(int fd);
+int sendREJ(int fd);
 
 int disconnectProtocol(int fd);
 int readDisc(int fd);
@@ -220,14 +221,17 @@ int dataProtocol(int fd){
   while (STOP == FALSE)
   { /* loop for input */
     int res = readData(fd);
-    if (res == -1)       // has already received Disc
+    if (res == -1)       // has received Disc
       STOP = TRUE;
     else if (res == 1){  // bcc2 detected errors
       //TO DO send REJ
+      sendREJ(fd);
 
+    } 
+    else {
+      sendRR(fd);
     }
-    sendRR(fd);
-    //TO DO answer normally (ask for next one)
+    
     
   }
 
@@ -235,7 +239,7 @@ int dataProtocol(int fd){
 }
 
 
-int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo
+int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo (ver se dup) e REJ
   memset(data, 0, 255);
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
@@ -290,6 +294,8 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
               }
               i++;
             }
+            //Destuffing here
+
             int xor = 0;
             for(int j = 0; j < strlen(data); j++){
               xor ^= data[j];
@@ -348,6 +354,36 @@ int sendRR(int fd){
 
   res = write(fd, buf, 5);
   printf("\nRR with R = %d sent!\n", dataFrameNum);
+  return 0;
+}
+
+
+int sendREJ(int fd){
+  //Send REJ back
+  char buf[255];
+  int res;
+  printf("\n%s\n", "Sending REJ back...");
+  char flagREJ = 0b01111110;             //todas as flags teem este valor, slide 10
+  char addressREJ = 0b00000001;          //header do emissor, slide 10
+  char controlREJ;
+  
+  if(dataFrameNum == 0)                 //REJ e R = dataFrameNum ,slide 7
+    controlREJ = 0b00000001;          
+  else
+    controlREJ = 0b10000001;
+  char bccREJ = (addressREJ ^ controlREJ); //XOR dos bytes anteriores ao mesmo
+  buf[4] = flagREJ;
+  buf[3] = bccREJ;
+  buf[2] = controlREJ;
+  buf[1] = addressREJ;
+  buf[0] = flagREJ;
+  for (size_t i = 0; i < 5; i++)
+  {
+    printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  }
+
+  res = write(fd, buf, 5);
+  printf("\nREJ with R = %d sent!\n", dataFrameNum);
   return 0;
 }
 

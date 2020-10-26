@@ -36,6 +36,7 @@ int readUA();
 
 char globalData[255];
 int dataFrameNum = 0;
+int resend = 0;
 int sendDataWithAlarm();
 int readDataResponse();
 
@@ -267,8 +268,20 @@ int transferData(){
     //Leitura da mensagem do receptor UA
   while (STOP == FALSE && nAlarm < 3)
   { /* loop for input */
-    if (readDataResponse() == 0) //Obteve resposta RR cm o dataFrameNum correto
+    int res = readDataResponse();
+    if (res == 0) //Obteve resposta RR cm o dataFrameNum correto
       STOP = TRUE;
+    else if (res == 1){ //Obtever REJ, resend
+      resend = 1;
+      STOP = TRUE;
+    }
+    
+  }
+
+  if(resend == 1){
+    printf("Resending Data...\n");
+    transferData();
+    return 0;
   }
 
   printf("\nData Transfered with success!\n");
@@ -301,6 +314,7 @@ int sendDataWithAlarm(){
       buf[4+i] = globalData[i];
       bcc2 ^= globalData[i];
     }
+
     buf[4+i] = bcc2;
     buf[4+i+1] = flag;
 
@@ -328,12 +342,13 @@ int sendDataWithAlarm(){
   alarm(3);
 }
 
-int readDataResponse(){
+int readDataResponse(){ //TO DO chechkar se rej e agir de acordo
   char buf[1];
   printf("\n%s\n", "Waiting for Response...");
   int stop = 0;
   int flag = 0;
   int res = 0;
+  resend = 0;
   while (stop == 0)
   { //state machine
     if(flag == 0)
@@ -348,11 +363,16 @@ int readDataResponse(){
         int res = read(fd, buf, 1);
 
         char controlRR;
+        char controlREJ;
         dataFrameNum = 1-dataFrameNum;
-        if(dataFrameNum == 0)                 //RR e R = dataFrameNum ,slide 7
-          controlRR = 0b00000101;          
-        else
+        if(dataFrameNum == 0){                 //RR e R = dataFrameNum ,slide 7
+          controlRR = 0b00000101;  
+          controlREJ = 0b10000001;
+        }
+        else{
           controlRR = 0b10000101;
+          controlREJ = 0b00000001;
+        }
 
         if (buf[0] == controlRR)
         { //control
@@ -371,6 +391,11 @@ int readDataResponse(){
           }
           else
             printf("Not the correct bcc\n");
+        }
+        else if(buf[0] == controlREJ){
+          dataFrameNum = 1-dataFrameNum; //go back to the number before
+          printf("Received REJ!\n");
+          return 1;
         }
         else
           printf("Not the correct control\n");
