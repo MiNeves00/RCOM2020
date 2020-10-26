@@ -112,6 +112,7 @@ int main(int argc, char **argv)
   char data[255] = {'s','d','b','k','9','4','g','3','l','4'};
   memcpy(globalData, data, 256);
   transferData(data);
+  //memset(globalData, 0, 255);
 
 
   disconnect();
@@ -273,7 +274,7 @@ int transferData(){
 
 
 int sendDataWithAlarm(){
-  memset(globalData, 0, 255);
+  
   char buf[255];
   if (nAlarm < 3)
   {
@@ -291,7 +292,7 @@ int sendDataWithAlarm(){
     buf[1] = address;
     buf[0] = flag;
     int i;
-    char bcc2; //XOR dos bytes de Data
+    char bcc2 = 0; //XOR dos bytes de Data
     for(i = 0; i < strlen(globalData); i++){
       buf[4+i] = globalData[i];
       bcc2 ^= globalData[i];
