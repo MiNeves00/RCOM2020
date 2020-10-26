@@ -14,9 +14,6 @@
 #define FALSE 0
 #define TRUE 1
 
-#define ESC 0x7D
-#define STUFF 0x20
-
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)     \
   (byte & 0x80 ? '1' : '0'),     \
@@ -217,58 +214,6 @@ int readUA()
   printf("UA received sucessfuly!\n");
   return 0;
 }
-
-// Data
-int serialNumber = 0;
-
-int stuffAndWrite( int fd, char *buf, int len)
-{
-  if (serialNumber == 0)
-    serialNumber = 1;
-
-  else
-    serialNumber = 0;
-
-  char newBuf[255];
-
-  newBuf[0] = 0b01111110;
-  newBuf[1] = 0b00000011;
-  
-  if (serialNumber == 1)
-    newBuf[2] = 0b01000000;
-
-  else
-    newBuf[2] = 0;
-
-  newBuf[3] = newBuf[1] ^ newBuf[2];
-
-  int n = 4, len = sizeof(buf);
-  char bcc2 = 0;
-
-  for (int i = 4; i < len-3; i++)
-  {
-    if (buf[i] == 0b01111110 || buf[i] == 0b01111101)
-    {
-      newBuf[n] = ESC;
-      newBuf[n++] = buf[i] ^ STUFF;
-      n++;
-    }
-
-    else
-    {
-      newBuf[n] = buf[i];
-      n++;
-    }
-
-    bcc2 ^= buf[i];
-  }
-
-  newBuf[n] = bcc2;
-  newBuf[n++] = 0b01111110;
-
-  return write(fd, newBuf, n+1);
-}
-
 
 void sendSetWithAlarm() // atende alarme
 {
