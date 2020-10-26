@@ -12,10 +12,6 @@
 #define FALSE 0
 #define TRUE 1
 
-#define FLAG 0x7e
-#define ESC 0x7d
-#define STUFF 0x20
-
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)     \
   (byte & 0x80 ? '1' : '0'),     \
