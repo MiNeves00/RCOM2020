@@ -12,6 +12,10 @@
 #define FALSE 0
 #define TRUE 1
 
+#define FLAG 0x7e
+#define ESC 0x7d
+#define STUFF 0x20
+
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)     \
   (byte & 0x80 ? '1' : '0'),     \
@@ -237,6 +241,7 @@ int dataProtocol(int fd){
 
 int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo
   memset(data, 0, 255);
+  char tmpData[255];
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
   int stop = 0;
@@ -285,21 +290,46 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
                 receiving = 1;
                 stop = 1;
               } else {
-                data[i] = bcc2;
+                tmpData[i] = bcc2;
                 bcc2 = buf[0];
               }
               i++;
             }
-            int xor = 0;
-            for(int j = 0; j < strlen(data); j++){
-              xor ^= data[j];
+            int xor = 0, n = 0;
+            for(int j = 0; j < strlen(tmpData); j++)
+            {
+              if (tmpData[j] == ESC)
+              {
+                if(tmpData[++j] == FLAG ^ STUFF)
+                  data[n] = FLAG;
+
+                else if (tmpData[++j] == ESC ^ STUFF)
+                  data[n] = ESC;
+              }
+
+              else
+                data[n] = tmpData[j];
+    
+              xor ^= data[n];
+
+              n++;
             }
+
+            printf("BCC2: " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bcc2));
+            printf("\nXOR: " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(xor));
+
+
             if(bcc2 != xor){
               printf("BCC2 shows errors in data fields!\n");
               return 1;
             }
 
+            printf("\n Size = %d\n", strlen(data));
 
+            for (size_t i = 0; i < strlen(data); i++)
+            {
+              printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(data[i]));
+            }
 
           }
           else
