@@ -31,8 +31,10 @@ int sendUA(int fd);
 
 char data[255];
 int dataFrameNum = 0;
+int duplicate = 0;
 int dataProtocol(int fd);
 int readData(int fd);
+int sendRR(int fd);
 
 int disconnectProtocol(int fd);
 int readDisc(int fd);
@@ -224,7 +226,7 @@ int dataProtocol(int fd){
       //TO DO send REJ
 
     }
-
+    sendRR(fd);
     //TO DO answer normally (ask for next one)
     
   }
@@ -233,7 +235,7 @@ int dataProtocol(int fd){
 }
 
 
-int readData(int fd){ //TO DO parte do Disc
+int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo
   memset(data, 0, 255);
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
@@ -258,7 +260,9 @@ int readData(int fd){ //TO DO parte do Disc
         int res = read(fd, buf, 1);
 
         if(dataFrameNum == 0)           //S e N(s), slide 7
-          control = 0b00000000;      
+          control = 0b00000000;
+          //if(buf[0] == 0b01000000)
+          //  duplicate = 1;      
         else
           control = 0b01000000;
 
@@ -315,6 +319,36 @@ int readData(int fd){ //TO DO parte do Disc
 
   printf("Data received sucessfuly!\n");
   return 0;  
+}
+
+
+int sendRR(int fd){
+  //Send RR back
+  char buf[255];
+  int res;
+  printf("\n%s\n", "Sending RR back...");
+  char flagRR = 0b01111110;             //todas as flags teem este valor, slide 10
+  char addressRR = 0b00000001;          //header do emissor, slide 10
+  char controlRR;
+  dataFrameNum = 1-dataFrameNum;
+  if(dataFrameNum == 0)                 //RR e R = dataFrameNum ,slide 7
+    controlRR = 0b00000101;          
+  else
+    controlRR = 0b10000101;
+  char bccRR = (addressRR ^ controlRR); //XOR dos bytes anteriores ao mesmo
+  buf[4] = flagRR;
+  buf[3] = bccRR;
+  buf[2] = controlRR;
+  buf[1] = addressRR;
+  buf[0] = flagRR;
+  for (size_t i = 0; i < 5; i++)
+  {
+    printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
+  }
+
+  res = write(fd, buf, 5);
+  printf("\nRR with R = %d sent!\n", dataFrameNum);
+  return 0;
 }
 
 

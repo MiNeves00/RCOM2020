@@ -111,8 +111,12 @@ int main(int argc, char **argv)
 
   char data[255] = {'s','d','b','k','9','4','g','3','l','4'};
   memcpy(globalData, data, 256);
-  transferData(data);
-  //memset(globalData, 0, 255);
+  transferData();
+
+  memset(globalData, 0, 255);
+  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','M'};
+  memcpy(globalData, data2, 256);
+  transferData();
 
 
   disconnect();
@@ -263,11 +267,11 @@ int transferData(){
     //Leitura da mensagem do receptor UA
   while (STOP == FALSE && nAlarm < 3)
   { /* loop for input */
-    if (readDataResponse() == 0)
+    if (readDataResponse() == 0) //Obteve resposta RR cm o dataFrameNum correto
       STOP = TRUE;
   }
 
-  printf("\nData Transfered with success! %d\n", nAlarm);
+  printf("\nData Transfered with success!\n");
   return 0;
   
 }
@@ -325,16 +329,62 @@ int sendDataWithAlarm(){
 }
 
 int readDataResponse(){
-    char buf[1];
-  printf("\n%s\n", "Waiting for Data Response...");
+  char buf[1];
+  printf("\n%s\n", "Waiting for Response...");
   int stop = 0;
+  int flag = 0;
+  int res = 0;
   while (stop == 0)
   { //state machine
-    //TO DO
-    //Also changes S between current value and the next
+    if(flag == 0)
+      res = read(fd, buf, 1);
+
+    if (buf[0] == 0b01111110)
+    { //flag
+      int res = read(fd, buf, 1);
+
+      if (buf[0] == 0b00000001)
+      { //address
+        int res = read(fd, buf, 1);
+
+        char controlRR;
+        dataFrameNum = 1-dataFrameNum;
+        if(dataFrameNum == 0)                 //RR e R = dataFrameNum ,slide 7
+          controlRR = 0b00000101;          
+        else
+          controlRR = 0b10000101;
+
+        if (buf[0] == controlRR)
+        { //control
+          int res = read(fd, buf, 1);
+
+          if (buf[0] == (0b00000001 ^ controlRR))
+          { //bcc
+            int res = read(fd, buf, 1);
+
+            if (buf[0] == 0b01111110)
+            { //final flag
+              stop = 1;
+            }
+            else
+              printf("Not the correct final flag\n");
+          }
+          else
+            printf("Not the correct bcc\n");
+        }
+        else
+          printf("Not the correct control\n");
+      }
+      else
+        printf("Not the correct address\n");
+    }
+    
+    flag = 0;
+    if(buf[0] == 0b01111110) //if its a flag
+      flag = 1;
   }
 
-  printf("Data Response received sucessfuly!\n");
+  printf("Response received sucessfuly!\n");
   return 0;
 }
 #pragma endregion
