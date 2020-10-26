@@ -14,6 +14,10 @@
 #define FALSE 0
 #define TRUE 1
 
+#define FLAG 0x7e
+#define ESC 0x7d
+#define STUFF 0x20
+
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)     \
   (byte & 0x80 ? '1' : '0'),     \
@@ -114,7 +118,7 @@ int main(int argc, char **argv)
   transferData();
 
   memset(globalData, 0, 255);
-  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','M'};
+  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','~'};
   memcpy(globalData, data2, 256);
   transferData();
 
@@ -295,18 +299,31 @@ int sendDataWithAlarm(){
     buf[2] = control;
     buf[1] = address;
     buf[0] = flag;
-    int i;
+    int i, n = 4;
     char bcc2 = 0; //XOR dos bytes de Data
     for(i = 0; i < strlen(globalData); i++){
-      buf[4+i] = globalData[i];
+      if (globalData[i] == 0b01111110 || globalData[i] == 0b01111101)
+      {
+        buf[n] = ESC;
+        buf[++n] = globalData[i] ^ STUFF;
+        n++;
+        printf("\nStuffed\n");
+      }
+
+      else
+      {
+        buf[n] = globalData[i];
+        n++;
+      }
       bcc2 ^= globalData[i];
     }
-    buf[4+i] = bcc2;
-    buf[4+i+1] = flag;
+    
+    buf[n] = bcc2;
+    buf[++n] = flag;
 
 
     printf("%s", "Sending Data...");
-    int size = strlen(globalData) + 6;
+    int size = ++n;
     printf("\n%s%d ->", "Size: ", size);
     for (size_t i = 0; i < size; i++)
     {
