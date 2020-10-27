@@ -292,19 +292,31 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
               } else {
                 tmpData[i] = bcc2;
                 bcc2 = buf[0];
+                printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(tmpData[i]));
               }
               i++;
             }
+
+            char stuffflag = STUFF ^ FLAG;
+            char stuffesc = STUFF ^ ESC;
+
             int xor = 0, n = 0;
-            for(int j = 0; j < strlen(tmpData); j++)
+            for(int j = 0; j < i; j++)
             {
               if (tmpData[j] == ESC)
               {
-                if(tmpData[++j] == FLAG ^ STUFF)
-                  data[n] = FLAG;
+                j++;
 
-                else if (tmpData[++j] == ESC ^ STUFF)
+                if(tmpData[j] == stuffflag)
+                {
+                  data[n] = FLAG;
+                }
+
+                else if (tmpData[j] == stuffesc)
+                {
                   data[n] = ESC;
+                }
+
               }
 
               else
@@ -315,22 +327,17 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
               n++;
             }
 
-            printf("BCC2: " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(bcc2));
-            printf("\nXOR: " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(xor));
-
-
-            if(bcc2 != xor){
-              printf("BCC2 shows errors in data fields!\n");
-              return 1;
-            }
-
-            printf("\n Size = %d\n", strlen(data));
+            printf("\nSize = %d\n", strlen(data));
 
             for (size_t i = 0; i < strlen(data); i++)
             {
               printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(data[i]));
             }
 
+            if(bcc2 != xor){
+              printf("BCC2 shows errors in data fields!\n");
+              return 1;
+            }
           }
           else
             printf("Not the correct bcc1\n");
@@ -347,7 +354,7 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
       flag = 1;
   }
 
-  printf("Data received sucessfuly!\n");
+  printf("\nData received sucessfuly!\n");
   return 0;  
 }
 

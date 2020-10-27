@@ -118,7 +118,7 @@ int main(int argc, char **argv)
   transferData();
 
   memset(globalData, 0, 255);
-  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','~'};
+  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','M'};
   memcpy(globalData, data2, 256);
   transferData();
 
@@ -307,7 +307,6 @@ int sendDataWithAlarm(){
         buf[n] = ESC;
         buf[++n] = globalData[i] ^ STUFF;
         n++;
-        printf("\nStuffed\n");
       }
 
       else
