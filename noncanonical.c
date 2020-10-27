@@ -223,14 +223,12 @@ int dataProtocol(int fd){
     int res = readData(fd);
     if (res == -1)       // has received Disc
       STOP = TRUE;
-    else if (res == 1){  // bcc2 detected errors
-      //TO DO send REJ
+    else if (res == 1) // bcc2 detected errors
       sendREJ(fd);
-
-    } 
-    else {
+    
+    else 
       sendRR(fd);
-    }
+    
     
     
   }
@@ -239,7 +237,7 @@ int dataProtocol(int fd){
 }
 
 
-int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo (ver se dup) e REJ
+int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo (ver se dup)
   memset(data, 0, 255);
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
@@ -366,7 +364,7 @@ int sendREJ(int fd){
   char flagREJ = 0b01111110;             //todas as flags teem este valor, slide 10
   char addressREJ = 0b00000001;          //header do emissor, slide 10
   char controlREJ;
-  
+
   if(dataFrameNum == 0)                 //REJ e R = dataFrameNum ,slide 7
     controlREJ = 0b00000001;          
   else

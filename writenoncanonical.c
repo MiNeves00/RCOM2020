@@ -342,7 +342,7 @@ int sendDataWithAlarm(){
   alarm(3);
 }
 
-int readDataResponse(){ //TO DO chechkar se rej e agir de acordo
+int readDataResponse(){ 
   char buf[1];
   printf("\n%s\n", "Waiting for Response...");
   int stop = 0;
