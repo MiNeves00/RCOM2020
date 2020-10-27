@@ -39,6 +39,7 @@ int dataFrameNum = 0;
 int resend = 0;
 int sendDataWithAlarm();
 int readDataResponse();
+int test = 0;
 
 int disconnect();
 int readDisc();
@@ -119,6 +120,10 @@ int main(int argc, char **argv)
   memcpy(globalData, data2, 256);
   transferData();
 
+  memset(globalData, 0, 255);
+  char data3[255] = {'f','f','1','.',' ','j','3','a','s','M','F'};
+  memcpy(globalData, data3, 256);
+  transferData();
 
   disconnect();
 
@@ -298,6 +303,9 @@ int sendDataWithAlarm(){
     char flag = 0b01111110;         //todas as flags teem este valor, slide 10
     char address = 0b00000011;      //header do emissor, slide 10
     char control;
+    if(test == 1)
+      dataFrameNum = 1 - dataFrameNum;
+    test++;
     if(dataFrameNum == 0)           //S e N(s), slide 7
       control = 0b00000000;      
     else
