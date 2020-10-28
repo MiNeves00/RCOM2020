@@ -46,6 +46,10 @@ int readDisc(int fd);
 int sendDiscWithAlarm(int fd);
 int readUA(int fd);
 
+
+
+int llread(int fd, char* buffer);
+
 int nAlarm = 0;
 
 int main(int argc, char **argv)
@@ -230,9 +234,12 @@ int dataProtocol(int fd){
     else if (res == 1) // bcc2 detected errors
       sendREJ(fd);
     
-    else 
+    else{
       sendRR(fd);
-    
+
+      if(duplicate == 0) //discard data if duplicate
+        llread(fd, &data);
+    }
     
     
   }
@@ -241,7 +248,8 @@ int dataProtocol(int fd){
 }
 
 
-int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento discarta tudo (ver se dup)
+int readData(int fd){ //TO DO parte do Disc
+
   memset(data, 0, 255);
   char tmpData[255];
   char buf[1];
@@ -251,6 +259,7 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
   int res = 0;
   int control;
   char bcc2;
+  duplicate = 0;
 
 
   while (stop == 0)
@@ -266,13 +275,16 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
       { //address
         int res = read(fd, buf, 1);
 
-        if(dataFrameNum == 0)           //S e N(s), slide 7
+        if(dataFrameNum == 0){           //S e N(s), slide 7
           control = 0b00000000;
-          //if(buf[0] == 0b01000000)
-          //  duplicate = 1;      
-        else
+          if(buf[0] == 0b01000000)
+            duplicate = 1;    
+        }  
+        else{
           control = 0b01000000;
-
+          if(buf[0] == 0b00000000)
+            duplicate = 1;
+        }
         if (buf[0] == control)
         { //control
           int res = read(fd, buf, 1);
@@ -340,6 +352,11 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
           else
             printf("Not the correct bcc1\n");
         }
+        else if(duplicate == 1){
+          dataFrameNum = 1-dataFrameNum; //para pedir de novo a trama seguinte visto que esta era duplicate 
+          printf("Data was a Duplicate\n");
+          return 0;
+        }
         else
           printf("Not the correct control\n");
       }
@@ -352,7 +369,7 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
       flag = 1;
   }
 
-  printf("\nData received sucessfuly!\n");
+  printf("\n**Data received sucessfuly!**\n");
   return 0;  
 }
 
@@ -597,3 +614,15 @@ int readUA(int fd)
   return 0;
 }
 #pragma endregion
+
+
+
+#pragma region //////APP
+
+int llread(int fd, char* buffer){
+  //TO DO ,guarda a data senao ela desaparece
+  printf("SAVED DATA\n");
+}
+
+#pragma endregion
+
