@@ -114,15 +114,20 @@ int main(int argc, char **argv)
   printf("\nConnection SET!\n");
 
 
-  char data[255] = {'s','d','b','k','9','4','g','3','l','4'};
+  char data[255] = {'s','d','b','k','9','~','{','}','~','4'};
   memcpy(globalData, data, 256);
   transferData();
 
   memset(globalData, 0, 255);
-  char data2[255] = {'f','f','1','.',' ','j','3','a','s','M','M'};
+  char data2[255] = {'{','f','1','.',' ','j','~','~','~','}','}'};
   memcpy(globalData, data2, 256);
   transferData();
 
+
+  memset(globalData, 0, 255);
+  char data3[255] = {'~','~','}'};
+  memcpy(globalData, data3, 256);
+  transferData();
 
   disconnect();
 
