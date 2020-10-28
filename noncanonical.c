@@ -302,8 +302,8 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
             char stuffflag = STUFF ^ FLAG;
             char stuffesc = STUFF ^ ESC;
 
-            int xor = 0, n = 0;
-            for(int j = 0; j < i; j++)
+            int xor = 0, n = 0, j;
+            for(j = 0; j < (i-1); j++)
             {
               if (tmpData[j] == ESC)
               {
@@ -327,13 +327,6 @@ int readData(int fd){ //TO DO parte do Disc e dar handle da data de momento disc
               xor ^= data[n];
 
               n++;
-            }
-
-            printf("\nSize = %d\n", strlen(data));
-
-            for (size_t i = 0; i < strlen(data); i++)
-            {
-              printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(data[i]));
             }
 
             if(bcc2 != xor){
