@@ -244,7 +244,7 @@ int dataProtocol(int fd){
 }
 
 
-int readData(int fd){ //TO DO parte do Disc e  (ver se dup)
+int readData(int fd){ //TO DO parte do Disc
   memset(data, 0, 255);
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");

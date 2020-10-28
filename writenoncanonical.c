@@ -45,6 +45,12 @@ int readDisc();
 int sendDisconnectWithAlarm();
 int sendUA();
 
+int llopen(int porta, int flag);
+struct applicationLayer {
+  int fileDescriptor;/*Descritor correspondente à porta série*/
+  int status;/*TRANSMITTER | RECEIVER*/
+} appLayer;
+
 int main(int argc, char **argv)
 {
   int c, res;
@@ -561,4 +567,22 @@ int sendUA()
   printf("%s\n", "\nUA sent!");
   return 0;
 }
+#pragma endregion
+
+#pragma region //////APP
+
+int llopen(int porta, int flag){   //TO DO 
+
+  appLayer.fileDescriptor = porta;
+  appLayer.status = flag;
+
+  char c = 2; //Slide 23
+  char t1 = 0b00000000; //tamanho ficheiro
+  char l1 = 0b00000001; //tamanho v
+  char v1 = 0b11111111; //TO DO is random value 
+  char t2 = 0b00000111; //nome
+  char v2[7] = {'p','i','n','g','u','i','m'};
+
+}
+
 #pragma endregion
