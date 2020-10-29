@@ -40,6 +40,7 @@ int readUA();
 
 
 char globalData[255];
+int currentDataSize = 0;
 int dataFrameNum = 0;
 int resend = 0;
 int sendDataWithAlarm();
@@ -52,7 +53,7 @@ int sendDisconnectWithAlarm();
 int sendUA();
 
 
-char openBuf[19];
+char openBuf[18];
 int llopen(int porta, int flag);
 struct applicationLayer {
   int fileDescriptor;/*Descritor correspondente à porta série*/
@@ -130,12 +131,14 @@ int main(int argc, char **argv)
   printf("\nConnection SET!\n");
 
   llopen(10,0);
-/*   memset(globalData, 0, 255);
-  memcpy(globalData, openBuf, 256);
-  transferData(); */
+  currentDataSize = 18;
+   memset(globalData, 0, 255);
+  memcpy(globalData, openBuf, 18);
+  transferData();
 
   memset(globalData, 0, 255);
   char data[255] = {'s','d','b','k','9','~','{','}','~','4'};
+  currentDataSize = 10;
   memcpy(globalData, data, 256);
   transferData();
 
@@ -333,7 +336,7 @@ int sendDataWithAlarm(){ //TO DO fix bug quando o recetor da sleep 4
     buf[0] = flag;
     int i, n = 4;
     char bcc2 = 0; //XOR dos bytes de Data
-    for(i = 0; i < strlen(globalData); i++){
+    for(i = 0; i < currentDataSize; i++){
       if (globalData[i] == 0b01111110 || globalData[i] == 0b01111101)
       {
         buf[n] = ESC;
@@ -596,9 +599,12 @@ int sendUA()
 }
 #pragma endregion
 
+
+
+
 #pragma region //////APP
 
-int llopen(int porta, int flag){   //TO DO 
+int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
 
   printf("\nllopen\n");
   appLayer.fileDescriptor = porta;
@@ -638,7 +644,6 @@ int llopen(int porta, int flag){   //TO DO
   openBuf[15] = v2[8];
   openBuf[16] = v2[9];
   openBuf[17] = v2[10];
-  openBuf[18] = v2[11];
 
   for(int i = 0; i < 18;i++)
     printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(openBuf[i]));

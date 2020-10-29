@@ -341,7 +341,7 @@ int readData(int fd){ //TO DO parte do Disc
               n++;
             }
             printf("\nData after Destuffing:\n");
-            for(int w = 0; w < strlen(data); w++)
+            for(int w = 0; w < n; w++)
               printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(data[w]));
 
             if(bcc2 != xor){
