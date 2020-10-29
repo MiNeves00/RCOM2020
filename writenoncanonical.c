@@ -272,6 +272,7 @@ void sendSetWithAlarm() // atende alarme
 #pragma region ////////Transfer Data
 
 int transferData(){
+
   nAlarm = 0;
   STOP = FALSE;
   printf("\nTransfering Data...\n");
@@ -298,6 +299,7 @@ int transferData(){
     return 0;
   }
 
+  dataFrameNum = 1- dataFrameNum;
   printf("\nData Transfered with success!\n");
   return 0;
   
@@ -375,6 +377,7 @@ int readDataResponse(){
   int flag = 0;
   int res = 0;
   resend = 0;
+  int tempDataFrameNum = 0;
   while (stop == 0)
   { //state machine
     if(flag == 0)
@@ -390,8 +393,9 @@ int readDataResponse(){
 
         char controlRR;
         char controlREJ;
-        dataFrameNum = 1-dataFrameNum;
-        if(dataFrameNum == 0){                 //RR e R = dataFrameNum ,slide 7
+
+        tempDataFrameNum = 1-dataFrameNum;
+        if(tempDataFrameNum == 0){                 //RR e R = dataFrameNum ,slide 7
           controlRR = 0b00000101;  
           controlREJ = 0b10000001;
         }
@@ -419,7 +423,7 @@ int readDataResponse(){
             printf("Not the correct bcc\n");
         }
         else if(buf[0] == controlREJ){
-          dataFrameNum = 1-dataFrameNum; //go back to the number before
+
           printf("Received REJ!\n");
           return 1;
         }
