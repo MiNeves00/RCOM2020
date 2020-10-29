@@ -38,22 +38,30 @@ int setConnection();
 void sendSetWithAlarm();
 int readUA();
 
+
 char globalData[255];
 int dataFrameNum = 0;
 int resend = 0;
 int sendDataWithAlarm();
 int readDataResponse();
 
+
 int disconnect();
 int readDisc();
 int sendDisconnectWithAlarm();
 int sendUA();
 
+
+char openBuf[19];
 int llopen(int porta, int flag);
 struct applicationLayer {
   int fileDescriptor;/*Descritor correspondente à porta série*/
   int status;/*TRANSMITTER | RECEIVER*/
 } appLayer;
+
+int llwrite();
+
+
 
 int main(int argc, char **argv)
 {
@@ -112,6 +120,8 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+  llwrite();
+
 
 
   //Establish Logic connection
@@ -119,20 +129,17 @@ int main(int argc, char **argv)
   setConnection();
   printf("\nConnection SET!\n");
 
+  llopen(10,0);
+/*   memset(globalData, 0, 255);
+  memcpy(globalData, openBuf, 256);
+  transferData(); */
 
+  memset(globalData, 0, 255);
   char data[255] = {'s','d','b','k','9','~','{','}','~','4'};
   memcpy(globalData, data, 256);
   transferData();
 
-  memset(globalData, 0, 255);
-  char data2[255] = {'{','f','1','.',' ','j','~','~','~','}','}'};
-  memcpy(globalData, data2, 256);
-  transferData();
 
-  memset(globalData, 0, 255);
-  char data3[255] = {'~','~','}'};
-  memcpy(globalData, data3, 256);
-  transferData();
 
   disconnect();
 
@@ -593,16 +600,74 @@ int sendUA()
 
 int llopen(int porta, int flag){   //TO DO 
 
+  printf("\nllopen\n");
   appLayer.fileDescriptor = porta;
   appLayer.status = flag;
 
+
+  struct stat st;
+  if(stat("./pinguim.gif",&st) == -1){
+    printf("\nError reading the file\n");
+  return -1;
+  }
+  off_t fileSize = st.st_size;
+
   char c = 2; //Slide 23
   char t1 = 0b00000000; //tamanho ficheiro
-  char l1 = 0b00000001; //tamanho v
-  char v1 = 0b11111111; //TO DO is random value 
-  char t2 = 0b00000111; //nome
-  char v2[7] = {'p','i','n','g','u','i','m'};
+  char l1 = 0b01000000; //tamanho v
+  int v1 = (int)(fileSize); 
+  char t2 = 0b00001011; //nome
+  char v2[11] = {'p','i','n','g','u','i','m','.','g','i','f'};
 
+  openBuf[0] = c;
+  openBuf[1] = l1;
+  openBuf[2] = (v1 >> 24) & 0xFF;
+  openBuf[3] = (v1 >> 16) & 0xFF;
+  openBuf[4] = (v1 >> 8) & 0xFF;
+  openBuf[5] = (v1) & 0xFF;
+  
+  openBuf[6] = t2;
+  openBuf[7] = v2[0];
+  openBuf[8] = v2[1];
+  openBuf[9] = v2[2];
+  openBuf[10] = v2[3];
+  openBuf[11] = v2[4];
+  openBuf[12] = v2[5];
+  openBuf[13] = v2[6];
+  openBuf[14] = v2[7];
+  openBuf[15] = v2[8];
+  openBuf[16] = v2[9];
+  openBuf[17] = v2[10];
+  openBuf[18] = v2[11];
+
+  for(int i = 0; i < 18;i++)
+    printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(openBuf[i]));
+  printf("\n");
+
+  return 0;
 }
 
+int llwrite(){
+
+printf("\n\n\nFILE\n\n\n");
+
+FILE *fileptr;
+char *buffer;
+long filelen;
+
+fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
+fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+filelen = ftell(fileptr);             // Get the current byte offset in the file
+rewind(fileptr);                      // Jump back to the beginning of the file
+
+buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
+fread(buffer, filelen, 1, fileptr); // Read in the entire file
+fclose(fileptr); // Close the file
+
+
+//TO DO
+}
+
+
 #pragma endregion
+
