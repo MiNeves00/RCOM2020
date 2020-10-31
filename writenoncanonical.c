@@ -55,13 +55,13 @@ int sendUA();
 
 char openBuf[18];
 int llopen(int porta, int flag);
-struct applicationLayer {
+struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
   int fileDescriptor;/*Descritor correspondente à porta série*/
   int status;/*TRANSMITTER | RECEIVER*/
 } appLayer;
 
-int llwrite();
-int sendStart();
+int llwrite(char* filename);
+int sendStart(char* filename);
 
 int llclose(int fd);
 
@@ -129,8 +129,8 @@ int main(int argc, char **argv)
 
 
   llopen(10,0);
-
-  llwrite();
+  char* nameOfFile = "pinguim.gif";
+  llwrite(nameOfFile); //TO DO receber por argumento
 
 
   currentDataSize = 18;
@@ -620,9 +620,9 @@ int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
 
 
 
-int llwrite(){
+int llwrite(char* filename){
 
-  sendStart();
+  sendStart(filename);
 
 
 
@@ -648,12 +648,19 @@ int llwrite(){
 }
 
 
-int sendStart(){ //TO DO receber o nome do ficheiro por parametro
+int sendStart(char* filename){
 
   printf("\nSending Start...\n");
 
+  int sizeName = strlen(filename);
+  char* str = "./";
+  char nameDest[sizeName+2];
+  strcpy(nameDest,str);
+  strcat(nameDest,filename);
+
+
   struct stat st;
-  if(stat("./pinguim.gif",&st) == -1){
+  if(stat(nameDest,&st) == -1){
     printf("\nError reading the file\n");
   return -1;
   }
@@ -663,7 +670,8 @@ int sendStart(){ //TO DO receber o nome do ficheiro por parametro
   char l1 = 0b01000000; //tamanho v
   int v1 = (int)(fileSize); 
   char t2 = 0b00001011; //nome
-  char v2[11] = {'p','i','n','g','u','i','m','.','g','i','f'};
+  char v2[sizeName];
+  strcpy(v2,filename);
 
   openBuf[0] = c;
   openBuf[1] = l1;
