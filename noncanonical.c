@@ -33,7 +33,8 @@ int setProtocol(int fd);
 int readSet(int fd);
 int sendUA(int fd);
 
-char data[255];
+int maximumFrameSize = 255;
+char data[255*2]; //TO DO problema ao ler o stuffing
 int dataFrameNum = 0;
 int duplicate = 0;
 int dataProtocol(int fd);
@@ -252,8 +253,8 @@ int dataProtocol(int fd){
 
 int readData(int fd){ //TO DO parte do Disc
 
-  memset(data, 0, 255);
-  char tmpData[255];
+  memset(data, 0, 255*2);
+  char tmpData[255*2];
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
   int stop = 0;

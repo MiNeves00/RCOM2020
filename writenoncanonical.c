@@ -38,7 +38,7 @@ int setConnection();
 void sendSetWithAlarm();
 int readUA();
 
-
+int frameMaxSize = 257; //TO DO receber por parametro talvez
 char globalData[255];
 int currentDataSize = 0;
 int dataFrameNum = 0;
@@ -59,6 +59,8 @@ struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
   int fileDescriptor;/*Descritor correspondente à porta série*/
   int status;/*TRANSMITTER | RECEIVER*/
 } appLayer;
+
+
 
 int llwrite(char* filename);
 int sendStartOrEnd(char* filename, int start);
@@ -308,7 +310,7 @@ int transferData(){
 
 int sendDataWithAlarm(){
   
-  char buf[255];
+  char buf[frameMaxSize*2];
   if (nAlarm < 3)
   {
     char flag = 0b01111110;         //todas as flags teem este valor, slide 10
@@ -358,11 +360,11 @@ int sendDataWithAlarm(){
 
     printf("%s", "Sending Data...");
     int size = ++n;
-    printf("\n%s%d ->", "Size: ", size);
-    for (size_t i = 0; i < size; i++)
+    printf("\n%s%d ->", "Size: ", currentDataSize); //TO DO voltar a por como estava size tbm
+     for (size_t i = 0; i < size; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
+    } 
 
     write(fd, buf, size);
 
@@ -684,7 +686,7 @@ int sendStartOrEnd(char* filename, int start){
 
   currentDataSize = 18;
   memset(globalData, 0, 255);
-  memcpy(globalData, openBuf, 18);
+  memcpy(globalData, openBuf, currentDataSize);
   transferData();
 
   if(start == 1)
@@ -702,7 +704,7 @@ int sendFileData(char* filename){
   char *buffer;
   long filelen;
 
-  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
+  fileptr = fopen(filename, "rb");  // Open the file in binary mode
   fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
   filelen = ftell(fileptr);             // Get the current byte offset in the file
   rewind(fileptr);                      // Jump back to the beginning of the file
@@ -710,7 +712,32 @@ int sendFileData(char* filename){
   buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
   fread(buffer, filelen, 1, fileptr); // Read in the entire file
   fclose(fileptr); // Close the file
+  printf("File len is : %d\n",filelen);
+  int numFramesToSend = filelen / frameMaxSize;
+  int bytesLeft = filelen - (numFramesToSend*frameMaxSize);
+  printf("Num of frames to send is %d\n", numFramesToSend);
 
+  currentDataSize = frameMaxSize;
+  int j = 0;
+
+   for(int i = 0; i < numFramesToSend; i++){
+    memset(globalData, 0, 255);
+
+    memcpy(globalData, buffer + j, currentDataSize);
+
+    transferData();
+    j += currentDataSize;
+  }
+
+  if(bytesLeft>0){
+  currentDataSize = bytesLeft;
+  memset(globalData, 0, 255);
+  memcpy(globalData, buffer + j, bytesLeft);
+  transferData();
+  }
+
+
+  //TO DO
 
 
 }
