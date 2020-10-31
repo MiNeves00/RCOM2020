@@ -703,16 +703,13 @@ int sendFileData(char* filename){
   buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
   fread(buffer, filelen, 1, fileptr); // Read in the entire file
   fclose(fileptr); // Close the file
-
+  printf("File len is : %d\n",filelen);
   int numFramesToSend = filelen / frameMaxSize;
-  int bytesLeft = filelen - numFramesToSend*frameMaxSize;
-  if(bytesLeft>0)
-    numFramesToSend++;
+  int bytesLeft = filelen - (numFramesToSend*frameMaxSize);
   printf("Num of frames to send is %d\n", numFramesToSend);
 
   currentDataSize = frameMaxSize;
   int j = 0;
-  //problema stuffing tamanho
 
    for(int i = 0; i < numFramesToSend; i++){
     memset(globalData, 0, 255);
@@ -723,9 +720,14 @@ int sendFileData(char* filename){
     j += currentDataSize;
   }
 
-/*   memset(globalData, 0, 255);
-  memcpy(globalData, buffer[j], bytesLeft);
-  transferData(); */
+  if(bytesLeft>0){
+  currentDataSize = bytesLeft;
+  memset(globalData, 0, 255);
+  memcpy(globalData, buffer + j, bytesLeft);
+  transferData();
+  }
+
+
   //TO DO
 
 
