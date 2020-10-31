@@ -241,7 +241,6 @@ int dataProtocol(int fd){
         llread(fd, &data);
     }
     
-    
   }
 
   return 0;
@@ -622,6 +621,16 @@ int readUA(int fd)
 int llread(int fd, char* buffer){
   //TO DO ,guarda a data senao ela desaparece
   printf("SAVED DATA\n");
+}
+
+int llclose(int fd)
+{
+  printf("\nllclose\n");
+
+  if (disconnectProtocol(fd) != 0)
+    return 1;
+
+  return 0;
 }
 
 #pragma endregion
