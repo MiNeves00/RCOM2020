@@ -60,6 +60,8 @@ struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
   int status;/*TRANSMITTER | RECEIVER*/
 } appLayer;
 
+
+int frameMaxSize = 256; //TO DO receber por parametro talvez
 int llwrite(char* filename);
 int sendStartOrEnd(char* filename, int start);
 int sendFileData(char* filename);
@@ -308,7 +310,7 @@ int transferData(){
 
 int sendDataWithAlarm(){
   
-  char buf[255];
+  char buf[frameMaxSize*2];
   if (nAlarm < 3)
   {
     char flag = 0b01111110;         //todas as flags teem este valor, slide 10
@@ -675,7 +677,7 @@ int sendStartOrEnd(char* filename, int start){
 
   currentDataSize = 18;
   memset(globalData, 0, 255);
-  memcpy(globalData, openBuf, 18);
+  memcpy(globalData, openBuf, currentDataSize);
   transferData();
 
   if(start == 1)
@@ -693,7 +695,7 @@ int sendFileData(char* filename){
   char *buffer;
   long filelen;
 
-  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
+  fileptr = fopen(filename, "rb");  // Open the file in binary mode
   fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
   filelen = ftell(fileptr);             // Get the current byte offset in the file
   rewind(fileptr);                      // Jump back to the beginning of the file
@@ -702,6 +704,29 @@ int sendFileData(char* filename){
   fread(buffer, filelen, 1, fileptr); // Read in the entire file
   fclose(fileptr); // Close the file
 
+  int numFramesToSend = filelen / frameMaxSize;
+  int bytesLeft = filelen - numFramesToSend*frameMaxSize;
+  if(bytesLeft>0)
+    numFramesToSend++;
+  printf("Num of frames to send is %d\n", numFramesToSend);
+
+  currentDataSize = frameMaxSize;
+  int j = 0;
+  //problema stuffing tamanho
+
+   for(int i = 0; i < 2; i++){
+    memset(globalData, 0, 255);
+
+    memcpy(globalData, buffer + j, currentDataSize);
+
+    transferData();
+    j += currentDataSize;
+  }
+
+/*   memset(globalData, 0, 255);
+  memcpy(globalData, buffer[j], bytesLeft);
+  transferData(); */
+  //TO DO
 
 
 }
