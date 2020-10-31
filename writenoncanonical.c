@@ -55,13 +55,14 @@ int sendUA();
 
 char openBuf[18];
 int llopen(int porta, int flag);
-struct applicationLayer {
+struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
   int fileDescriptor;/*Descritor correspondente à porta série*/
   int status;/*TRANSMITTER | RECEIVER*/
 } appLayer;
 
-int llwrite();
-int sendStart();
+int llwrite(char* filename);
+int sendStartOrEnd(char* filename, int start);
+int sendFileData(char* filename);
 
 int llclose(int fd);
 
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
   {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS10\n");
     exit(1);
-  }
+  } //TO DO receber filename por parametro
 
   /*
     Open serial port device for reading and writing and not as controlling tty
@@ -130,21 +131,8 @@ int main(int argc, char **argv)
 
   llopen(10,0);
 
-  llwrite();
-
-
-  currentDataSize = 18;
-   memset(globalData, 0, 255);
-  memcpy(globalData, openBuf, 18);
-  transferData();
-
-  memset(globalData, 0, 255);
-  char data[255] = {'s','d','b','k','9','~','{','}','~','4'};
-  currentDataSize = 10;
-  memcpy(globalData, data, 256);
-  transferData();
-
-
+  char* nameOfFile = "pinguim.gif";
+  llwrite(nameOfFile);
 
   llclose(fd);
 
@@ -318,7 +306,7 @@ int transferData(){
 }
 
 
-int sendDataWithAlarm(){ //TO DO fix bug quando o recetor da sleep 4
+int sendDataWithAlarm(){
   
   char buf[255];
   if (nAlarm < 3)
@@ -620,50 +608,50 @@ int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
 
 
 
-int llwrite(){
+int llwrite(char* filename){
 
-  sendStart();
+  sendStartOrEnd(filename,1);
 
+  sendFileData(filename);
 
+  sendStartOrEnd(filename,0);
 
-  printf("\n\n\nFILE\n\n\n");
-
-  FILE *fileptr;
-  char *buffer;
-  long filelen;
-
-  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
-  fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
-  filelen = ftell(fileptr);             // Get the current byte offset in the file
-  rewind(fileptr);                      // Jump back to the beginning of the file
-
-  buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
-  fread(buffer, filelen, 1, fileptr); // Read in the entire file
-  fclose(fileptr); // Close the file
-
-
-
-
-  //TO DO
 }
 
 
-int sendStart(){ //TO DO receber o nome do ficheiro por parametro
+int sendStartOrEnd(char* filename, int start){
 
+  memset(openBuf, 0, 18);
+  char c; //Slide 23
+  if(start == 1){
   printf("\nSending Start...\n");
+    c = 2;
+  } else {
+    printf("\nSending End...\n");
+    c = 3;
+  }
+
+
+  int sizeName = strlen(filename);
+  char* str = "./";
+  char nameDest[sizeName+2];
+  strcpy(nameDest,str);
+  strcat(nameDest,filename);
+
 
   struct stat st;
-  if(stat("./pinguim.gif",&st) == -1){
+  if(stat(nameDest,&st) == -1){
     printf("\nError reading the file\n");
   return -1;
   }
   off_t fileSize = st.st_size;
-  char c = 2; //Slide 23
+
   char t1 = 0b00000000; //tamanho ficheiro
   char l1 = 0b01000000; //tamanho v
   int v1 = (int)(fileSize); 
   char t2 = 0b00001011; //nome
-  char v2[11] = {'p','i','n','g','u','i','m','.','g','i','f'};
+  char v2[sizeName];
+  strcpy(v2,filename);
 
   openBuf[0] = c;
   openBuf[1] = l1;
@@ -685,11 +673,37 @@ int sendStart(){ //TO DO receber o nome do ficheiro por parametro
   openBuf[16] = v2[9];
   openBuf[17] = v2[10];
 
-  for(int i = 0; i < 18;i++)
-    printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(openBuf[i]));
-  printf("\n");
+  currentDataSize = 18;
+  memset(globalData, 0, 255);
+  memcpy(globalData, openBuf, 18);
+  transferData();
+
+  if(start == 1)
+    printf("\nStarted File Data Communication\n");
+  else
+    printf("\nEnded File Data Communication\n");
 
   return 0;
+}
+
+int sendFileData(char* filename){
+  printf("\n\n\nFILE\n\n\n");
+
+  FILE *fileptr;
+  char *buffer;
+  long filelen;
+
+  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
+  fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+  filelen = ftell(fileptr);             // Get the current byte offset in the file
+  rewind(fileptr);                      // Jump back to the beginning of the file
+
+  buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
+  fread(buffer, filelen, 1, fileptr); // Read in the entire file
+  fclose(fileptr); // Close the file
+
+
+
 }
 
 
