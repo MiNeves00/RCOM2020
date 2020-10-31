@@ -61,6 +61,9 @@ struct applicationLayer {
 } appLayer;
 
 int llwrite();
+int sendStart();
+
+int llclose(int fd);
 
 
 
@@ -121,16 +124,15 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+
+
+
+
+  llopen(10,0);
+
   llwrite();
 
 
-
-  //Establish Logic connection
-  printf("New termios structure set\n");
-  setConnection();
-  printf("\nConnection SET!\n");
-
-  llopen(10,0);
   currentDataSize = 18;
    memset(globalData, 0, 255);
   memcpy(globalData, openBuf, 18);
@@ -144,7 +146,7 @@ int main(int argc, char **argv)
 
 
 
-  disconnect();
+  llclose(fd);
 
 
 
@@ -607,9 +609,48 @@ int sendUA()
 int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
 
   printf("\nllopen\n");
-  appLayer.fileDescriptor = porta;
-  appLayer.status = flag;
+  //Establish Logic connection
+  printf("New termios structure set\n");
+  setConnection();
+  printf("\nConnection SET!\n");
 
+
+}
+
+
+
+
+int llwrite(){
+
+  sendStart();
+
+
+
+  printf("\n\n\nFILE\n\n\n");
+
+  FILE *fileptr;
+  char *buffer;
+  long filelen;
+
+  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
+  fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+  filelen = ftell(fileptr);             // Get the current byte offset in the file
+  rewind(fileptr);                      // Jump back to the beginning of the file
+
+  buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
+  fread(buffer, filelen, 1, fileptr); // Read in the entire file
+  fclose(fileptr); // Close the file
+
+
+
+
+  //TO DO
+}
+
+
+int sendStart(){ //TO DO receber o nome do ficheiro por parametro
+
+  printf("\nSending Start...\n");
 
   struct stat st;
   if(stat("./pinguim.gif",&st) == -1){
@@ -617,7 +658,6 @@ int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
   return -1;
   }
   off_t fileSize = st.st_size;
-
   char c = 2; //Slide 23
   char t1 = 0b00000000; //tamanho ficheiro
   char l1 = 0b01000000; //tamanho v
@@ -652,27 +692,12 @@ int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
   return 0;
 }
 
-int llwrite(){
-
-printf("\n\n\nFILE\n\n\n");
-
-FILE *fileptr;
-char *buffer;
-long filelen;
-
-fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
-fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
-filelen = ftell(fileptr);             // Get the current byte offset in the file
-rewind(fileptr);                      // Jump back to the beginning of the file
-
-buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
-fread(buffer, filelen, 1, fileptr); // Read in the entire file
-fclose(fileptr); // Close the file
 
 
-//TO DO
+
+int llclose(int fd){
+  disconnect();
 }
-
 
 #pragma endregion
 
