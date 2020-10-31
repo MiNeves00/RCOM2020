@@ -627,19 +627,8 @@ int llread(int fd, char* buffer){
   printf("SAVED DATA\n");
 }
 
-<<<<<<< HEAD
-int llclose(int fd)
-{
-  printf("\nllclose\n");
-
-  if (disconnectProtocol(fd) != 0)
-    return 1;
-
-  return 0;
-=======
 int llclose(int porta){
   disconnectProtocol(porta);
->>>>>>> e55cdec98a014550ac625101bd2ceab76e1f5e1d
 }
 
 #pragma endregion
