@@ -38,7 +38,7 @@ int setConnection();
 void sendSetWithAlarm();
 int readUA();
 
-
+int frameMaxSize = 257; //TO DO receber por parametro talvez
 char globalData[255];
 int currentDataSize = 0;
 int dataFrameNum = 0;
@@ -61,7 +61,7 @@ struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
 } appLayer;
 
 
-int frameMaxSize = 256; //TO DO receber por parametro talvez
+
 int llwrite(char* filename);
 int sendStartOrEnd(char* filename, int start);
 int sendFileData(char* filename);
@@ -351,11 +351,11 @@ int sendDataWithAlarm(){
 
     printf("%s", "Sending Data...");
     int size = ++n;
-    printf("\n%s%d ->", "Size: ", size);
-    for (size_t i = 0; i < size; i++)
+    printf("\n%s%d ->", "Size: ", currentDataSize); //TO DO voltar a por como estava size tbm
+     for (size_t i = 0; i < size; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
+    } 
 
     write(fd, buf, size);
 
@@ -714,7 +714,7 @@ int sendFileData(char* filename){
   int j = 0;
   //problema stuffing tamanho
 
-   for(int i = 0; i < 2; i++){
+   for(int i = 0; i < numFramesToSend; i++){
     memset(globalData, 0, 255);
 
     memcpy(globalData, buffer + j, currentDataSize);
