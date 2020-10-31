@@ -316,6 +316,21 @@ int readData(int fd){ //TO DO parte do Disc
             char stuffflag = STUFF ^ FLAG;
             char stuffesc = STUFF ^ ESC;
 
+            if (tmpData[i-2] == ESC)
+            {
+              i--;
+
+              if(bcc2 == stuffflag)
+              {
+                bcc2 = FLAG;
+              }
+
+              else if (bcc2 == stuffesc)
+              {
+                bcc2 = ESC;
+              }
+            }
+
             int xor = 0, n = 0, j;
             for(j = 0; j < (i-1); j++)
             {
@@ -634,12 +649,13 @@ int llread(int fd, char* buffer)
   if (readData(fd) == 0)
   {
     int c = data[0];
-
+  /*
     if (c == 2)
       recieveStart(filename, filesize, start);
 
     if (c == 3)
       recieveEnd(start);
+    */
   }
   //TO DO ,guarda a data senao ela desaparece
   printf("SAVED DATA\n");
@@ -712,12 +728,14 @@ int recieveEnd(char* start)
   n += l2;
 
   printf("\nEND Recieved!\n");
-
+  /*
   if (strncmp(start, data, n) != 0)
   {
     printf("\nEND different from START\n");
     return 1;
   }
+  */
+  printf("\nEND Recieved!\n");
 }
 
 int llclose(int porta){
