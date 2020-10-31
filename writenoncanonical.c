@@ -62,6 +62,7 @@ struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
 
 int llwrite(char* filename);
 int sendStartOrEnd(char* filename, int start);
+int sendFileData(char* filename);
 
 int llclose(int fd);
 
@@ -129,22 +130,9 @@ int main(int argc, char **argv)
 
 
   llopen(10,0);
+
   char* nameOfFile = "pinguim.gif";
   llwrite(nameOfFile);
-
-
-  currentDataSize = 18;
-   memset(globalData, 0, 255);
-  memcpy(globalData, openBuf, 18);
-  transferData();
-
-  memset(globalData, 0, 255);
-  char data[255] = {'s','d','b','k','9','~','{','}','~','4'};
-  currentDataSize = 10;
-  memcpy(globalData, data, 256);
-  transferData();
-
-
 
   llclose(fd);
 
@@ -624,41 +612,23 @@ int llwrite(char* filename){
 
   sendStartOrEnd(filename,1);
 
-
-
-  printf("\n\n\nFILE\n\n\n");
-
-  FILE *fileptr;
-  char *buffer;
-  long filelen;
-
-  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
-  fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
-  filelen = ftell(fileptr);             // Get the current byte offset in the file
-  rewind(fileptr);                      // Jump back to the beginning of the file
-
-  buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
-  fread(buffer, filelen, 1, fileptr); // Read in the entire file
-  fclose(fileptr); // Close the file
-
-  //TO DO
+  sendFileData(filename);
 
   sendStartOrEnd(filename,0);
-
-
 
 }
 
 
 int sendStartOrEnd(char* filename, int start){
 
+  memset(openBuf, 0, 18);
   char c; //Slide 23
   if(start == 1){
   printf("\nSending Start...\n");
-    char c = 2;
+    c = 2;
   } else {
     printf("\nSending End...\n");
-    char c = 3;
+    c = 3;
   }
 
 
@@ -703,11 +673,37 @@ int sendStartOrEnd(char* filename, int start){
   openBuf[16] = v2[9];
   openBuf[17] = v2[10];
 
-  for(int i = 0; i < 18;i++)
-    printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(openBuf[i]));
-  printf("\n");
+  currentDataSize = 18;
+  memset(globalData, 0, 255);
+  memcpy(globalData, openBuf, 18);
+  transferData();
+
+  if(start == 1)
+    printf("\nStarted File Data Communication\n");
+  else
+    printf("\nEnded File Data Communication\n");
 
   return 0;
+}
+
+int sendFileData(char* filename){
+  printf("\n\n\nFILE\n\n\n");
+
+  FILE *fileptr;
+  char *buffer;
+  long filelen;
+
+  fileptr = fopen("pinguim.gif", "rb");  // Open the file in binary mode
+  fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+  filelen = ftell(fileptr);             // Get the current byte offset in the file
+  rewind(fileptr);                      // Jump back to the beginning of the file
+
+  buffer = (char *)malloc(filelen * sizeof(char)); // Enough memory for the file
+  fread(buffer, filelen, 1, fileptr); // Read in the entire file
+  fclose(fileptr); // Close the file
+
+
+
 }
 
 
