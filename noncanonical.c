@@ -46,9 +46,9 @@ int readDisc(int fd);
 int sendDiscWithAlarm(int fd);
 int readUA(int fd);
 
-
-
+int llopen(int porta,int flag);
 int llread(int fd, char* buffer);
+int llclose(int porta);
 
 int nAlarm = 0;
 
@@ -112,9 +112,9 @@ int main(int argc, char **argv)
 
 
 
-  setProtocol(fd);
+  llopen(fd,1);
   dataProtocol(fd);
-  disconnectProtocol(fd);
+  llclose(fd);
 
   //sleep(2);
 
@@ -619,9 +619,17 @@ int readUA(int fd)
 
 #pragma region //////APP
 
+int llopen(int porta,int flag){
+  setProtocol(porta);
+}
+
 int llread(int fd, char* buffer){
   //TO DO ,guarda a data senao ela desaparece
   printf("SAVED DATA\n");
+}
+
+int llclose(int porta){
+  disconnectProtocol(porta);
 }
 
 #pragma endregion
