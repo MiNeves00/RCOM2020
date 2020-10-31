@@ -61,7 +61,7 @@ struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
 } appLayer;
 
 int llwrite(char* filename);
-int sendStart(char* filename);
+int sendStartOrEnd(char* filename, int start);
 
 int llclose(int fd);
 
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
   {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS10\n");
     exit(1);
-  }
+  } //TO DO receber filename por parametro
 
   /*
     Open serial port device for reading and writing and not as controlling tty
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 
   llopen(10,0);
   char* nameOfFile = "pinguim.gif";
-  llwrite(nameOfFile); //TO DO receber por argumento
+  llwrite(nameOfFile);
 
 
   currentDataSize = 18;
@@ -318,7 +318,7 @@ int transferData(){
 }
 
 
-int sendDataWithAlarm(){ //TO DO fix bug quando o recetor da sleep 4
+int sendDataWithAlarm(){
   
   char buf[255];
   if (nAlarm < 3)
@@ -622,7 +622,7 @@ int llopen(int porta, int flag){   //TO DO utilizar o port e a flag
 
 int llwrite(char* filename){
 
-  sendStart(filename);
+  sendStartOrEnd(filename,1);
 
 
 
@@ -641,16 +641,26 @@ int llwrite(char* filename){
   fread(buffer, filelen, 1, fileptr); // Read in the entire file
   fclose(fileptr); // Close the file
 
-
-
-
   //TO DO
+
+  sendStartOrEnd(filename,0);
+
+
+
 }
 
 
-int sendStart(char* filename){
+int sendStartOrEnd(char* filename, int start){
 
+  char c; //Slide 23
+  if(start == 1){
   printf("\nSending Start...\n");
+    char c = 2;
+  } else {
+    printf("\nSending End...\n");
+    char c = 3;
+  }
+
 
   int sizeName = strlen(filename);
   char* str = "./";
@@ -665,7 +675,7 @@ int sendStart(char* filename){
   return -1;
   }
   off_t fileSize = st.st_size;
-  char c = 2; //Slide 23
+
   char t1 = 0b00000000; //tamanho ficheiro
   char l1 = 0b01000000; //tamanho v
   int v1 = (int)(fileSize); 
