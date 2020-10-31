@@ -50,6 +50,9 @@ int llopen(int porta,int flag);
 int llread(int fd, char* buffer);
 int llclose(int porta);
 
+int recieveStart(char* filename, int filesize, char* start);
+int recieveEnd(char* start);
+
 int nAlarm = 0;
 
 int main(int argc, char **argv)
@@ -622,9 +625,99 @@ int llopen(int porta,int flag){
   setProtocol(porta);
 }
 
-int llread(int fd, char* buffer){
+int llread(int fd, char* buffer)
+{
+  int filesize;
+  
+  char *start, *filename;
+
+  if (readData(fd) == 0)
+  {
+    int c = data[0];
+
+    if (c == 2)
+      recieveStart(filename, filesize, start);
+
+    if (c == 3)
+      recieveEnd(start);
+  }
   //TO DO ,guarda a data senao ela desaparece
   printf("SAVED DATA\n");
+}
+
+int recieveStart(char* filename, int filesize, char* start)
+{
+  char *v1;
+  
+  printf("\nRecieving START...\n");
+
+  int t1 = data[1]; //type
+  int l1 = data[2]; //length
+
+  int n = 3;
+
+  v1 = malloc(l1);
+
+  for (int i = 0; i < l1; i++)
+  {
+    v1[i] = data[n]; //value
+    n++;
+  }
+
+  filesize = (int) v1;
+
+  int t2 = data[n];
+  int l2 = data[++n];
+
+  n++;
+
+  filename = malloc(l2);
+
+  for (int i = 0; i < l2; i++)
+  {
+    filename[i] = data[n]; //value
+    n++;
+  }
+
+  printf("\nSTART Recieved!\n");
+
+  start = malloc(n);
+  strcpy(start, data);
+}
+
+int recieveEnd(char* start)
+{
+  char *v1;
+
+  printf("\nRecieving END...\n");
+
+  int t1 = data[1]; //type
+  int l1 = data[2]; //length
+
+  int n = 3;
+
+  v1 = malloc(l1);
+
+  for (int i = 0; i < l1; i++)
+  {
+    v1[i] = data[n]; //value
+    n++;
+  }
+
+  int t2 = data[n];
+  int l2 = data[++n];
+
+  n++; //nao sei se e necessario
+
+  n += l2;
+
+  printf("\nEND Recieved!\n");
+
+  if (strncmp(start, data, n) != 0)
+  {
+    printf("\nEND different from START\n");
+    return 1;
+  }
 }
 
 int llclose(int porta){
