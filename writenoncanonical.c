@@ -39,7 +39,7 @@ void sendSetWithAlarm();
 int readUA();
 
 int frameMaxSize = 256; //TO DO receber por parametro talvez
-char globalData[255];
+char* globalData;
 int currentDataSize = 0;
 int dataFrameNum = 0;
 int resend = 0;
@@ -53,7 +53,7 @@ int sendDisconnectWithAlarm();
 int sendUA();
 
 
-char openBuf[18];
+char openBuf[26];
 int llopen(int porta, int flag);
 struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
   int fileDescriptor;/*Descritor correspondente à porta série*/
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 
 
 
-
+  globalData = malloc(frameMaxSize*2);
   llopen(10,0);
 
   char* nameOfFile = "pinguim.gif";
@@ -658,34 +658,50 @@ int sendStartOrEnd(char* filename, int start){
   off_t fileSize = st.st_size;
 
   char t1 = 0b00000000; //tamanho ficheiro
-  char l1 = 0b01000000; //tamanho v
+  char l1 = 0b00000100; //tamanho v
   int v1 = (int)(fileSize); 
-  char t2 = 0b00001011; //nome
+
+  char t2 = 0b00000001; //nome
+  char l2 = 0b00001011;
   char v2[sizeName];
   strcpy(v2,filename);
 
-  openBuf[0] = c;
-  openBuf[1] = l1;
-  openBuf[2] = (v1 >> 24) & 0xFF;
-  openBuf[3] = (v1 >> 16) & 0xFF;
-  openBuf[4] = (v1 >> 8) & 0xFF;
-  openBuf[5] = (v1) & 0xFF;
-  
-  openBuf[6] = t2;
-  openBuf[7] = v2[0];
-  openBuf[8] = v2[1];
-  openBuf[9] = v2[2];
-  openBuf[10] = v2[3];
-  openBuf[11] = v2[4];
-  openBuf[12] = v2[5];
-  openBuf[13] = v2[6];
-  openBuf[14] = v2[7];
-  openBuf[15] = v2[8];
-  openBuf[16] = v2[9];
-  openBuf[17] = v2[10];
+  char t3 = 0b00000010;
+  char l3 = 0b00000100;
+  int v3 = frameMaxSize;
 
-  currentDataSize = 18;
-  memset(globalData, 0, 255);
+  openBuf[0] = c;
+
+  openBuf[1] = t1;
+  openBuf[2] = l1;
+  openBuf[3] = (v1 >> 24) & 0xFF;
+  openBuf[4] = (v1 >> 16) & 0xFF;
+  openBuf[5] = (v1 >> 8) & 0xFF;
+  openBuf[6] = (v1) & 0xFF;
+  
+  openBuf[7] = t2;
+  openBuf[8] = l2;
+  openBuf[9] = v2[0];
+  openBuf[10] = v2[1];
+  openBuf[11] = v2[2];
+  openBuf[12] = v2[3];
+  openBuf[13] = v2[4];
+  openBuf[14] = v2[5];
+  openBuf[15] = v2[6];
+  openBuf[16] = v2[7];
+  openBuf[17] = v2[8];
+  openBuf[18] = v2[9];
+  openBuf[19] = v2[10];
+
+  openBuf[20] = t3;
+  openBuf[21] = l3;
+  openBuf[22] = (v3 >> 24) & 0xFF;
+  openBuf[23] = (v3 >> 16) & 0xFF;
+  openBuf[24] = (v3 >> 8) & 0xFF;
+  openBuf[25] = (v3) & 0xFF;
+
+  currentDataSize = 26;
+  memset(globalData, 0, frameMaxSize*2);
   memcpy(globalData, openBuf, currentDataSize);
   transferData();
 
@@ -721,7 +737,7 @@ int sendFileData(char* filename){
   int j = 0;
 
    for(int i = 0; i < numFramesToSend; i++){
-    memset(globalData, 0, 255);
+    memset(globalData, 0, frameMaxSize*2);
 
     memcpy(globalData, buffer + j, currentDataSize);
 
@@ -731,7 +747,7 @@ int sendFileData(char* filename){
 
   if(bytesLeft>0){
   currentDataSize = bytesLeft;
-  memset(globalData, 0, 255);
+  memset(globalData, 0, frameMaxSize*2);
   memcpy(globalData, buffer + j, bytesLeft);
   transferData();
   }
