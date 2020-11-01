@@ -343,7 +343,16 @@ int sendDataWithAlarm(){
       }
       bcc2 ^= globalData[i];
     }
-    buf[n] = bcc2;
+    
+    if (bcc2 == 0b01111110 || bcc2 == 0b01111101)
+    {
+      buf[n] = ESC;
+      buf[++n] = bcc2 ^ STUFF;
+    }
+
+    else
+      buf[n] = bcc2;
+      
     buf[++n] = flag;
 
 
