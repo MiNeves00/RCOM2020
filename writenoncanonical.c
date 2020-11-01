@@ -38,7 +38,7 @@ int setConnection();
 void sendSetWithAlarm();
 int readUA();
 
-int frameMaxSize = 257; //TO DO receber por parametro talvez
+int frameMaxSize = 256; //TO DO receber por parametro talvez
 char globalData[255];
 int currentDataSize = 0;
 int dataFrameNum = 0;
@@ -360,7 +360,7 @@ int sendDataWithAlarm(){
 
     printf("%s", "Sending Data...");
     int size = ++n;
-    printf("\n%s%d ->", "Size: ", currentDataSize); //TO DO voltar a por como estava size tbm
+    printf("\n%s%d ->", "Size: ", size);
      for (size_t i = 0; i < size; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
@@ -736,8 +736,6 @@ int sendFileData(char* filename){
   transferData();
   }
 
-
-  //TO DO
 
 
 }

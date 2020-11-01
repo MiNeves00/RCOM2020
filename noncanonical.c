@@ -647,9 +647,9 @@ int llread(int fd, char* buffer)
   
   char *start, *filename;
 
-  if (readData(fd) == 0)
+/*   if (readData(fd) == 0)
   {
-    int c = data[0];
+    int c = data[0]; */
   /*
     if (c == 2)
       recieveStart(filename, filesize, start);
@@ -657,7 +657,7 @@ int llread(int fd, char* buffer)
     if (c == 3)
       recieveEnd(start);
     */
-  }
+  //}
   //TO DO ,guarda a data senao ela desaparece
   printf("SAVED DATA\n");
 }
