@@ -54,9 +54,13 @@ int fileSize;
 int cntFileBytesRead = 0;
 int ignore = 0;
 int saveFileData();
+int writeToFile();
+
 int llclose(int porta);
 
-int recieveStart(char* filename, int filesize, char* start);
+char* start;
+char* fileName;
+int recieveStart(int fd);
 int recieveEnd(char* start);
 
 int nAlarm = 0;
@@ -262,8 +266,8 @@ int readData(int fd){ //TO DO parte do Disc
   char tmpData[maxFrameSize*2];
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
-  int stop = 0;
   int flag = 0;
+  int stop = 0;
   int res = 0;
   int control;
   char bcc2;
@@ -652,10 +656,10 @@ int llread(int fd, char* buffer)
   fileData = malloc(fileSize);
   
   dataProtocol(fd);
-
+  writeToFile();
 }
 
-int saveFileData(){
+int saveFileData(){ //TO DO receber tudo em pacotes de aplicacoa
 
   if(ignore == 0){
     ignore++;
@@ -677,19 +681,46 @@ int saveFileData(){
       }
 
       printf("SAVED DATA -> %d | Total Bytes read %d\n", bytes, cntFileBytesRead);
-    } else
+    } else{
       printf("Data ignored %d\n", cntFileBytesRead);
+      STOP = TRUE;
+    }
   }
 }
 
-int recieveStart(char* filename, int filesize, char* start)
-{
-  char *v1;
+int writeToFile(){
+  printf("writing\n");
   
-  printf("\nRecieving START...\n");
+  FILE *fp;
 
-  int t1 = data[1]; //type
-  int l1 = data[2]; //length
+  fp = fopen("./test.gif", "w+");
+   
+  printf("mega\n");
+
+  printf("writing\n");
+  
+  fwrite(fileData,1,fileSize,fp);
+  fclose(fp); 
+}
+
+int recieveStart(int fd)
+{
+  printf("\nRecieving START...\n");
+  char buf[32];
+  read(fd, buf, 32);
+  
+  char c = buf[4];
+  printf("C: %d",c);
+  if(c != 2){
+    return 1;
+  }
+  //FILE SIZE
+  char *v1;
+
+  int t1 = buf[5]; //type
+  printf("t1: %d",t1);
+  int l1 = buf[6]; //length
+  printf("l1: %d",t1);
 
   int n = 3;
 
@@ -697,29 +728,47 @@ int recieveStart(char* filename, int filesize, char* start)
 
   for (int i = 0; i < l1; i++)
   {
-    v1[i] = data[n]; //value
+    v1[i] = buf[n]; //value
     n++;
   }
+  fileSize = (int) v1;
 
-  filesize = (int) v1;
-
-  int t2 = data[n];
-  int l2 = data[++n];
+  //FILE NAME
+  int t2 = buf[n];
+  int l2 = buf[++n];
 
   n++;
 
-  filename = malloc(l2);
+  fileName = malloc(l2);
 
   for (int i = 0; i < l2; i++)
   {
-    filename[i] = data[n]; //value
+    fileName[i] = buf[n]; //value
     n++;
   }
+
+  //MaxFrameSize
+  char *v3;
+
+  int t3 = buf[n]; //type
+  int l3 = buf[++n]; //length
+
+  n++;
+  v3 = malloc(l3);
+
+  for (int i = 0; i < l3; i++)
+  {
+    v3[i] = buf[n]; //value
+    n++;
+  }
+  maxFrameSize = (int) v3;
 
   printf("\nSTART Recieved!\n");
 
   start = malloc(n);
   strcpy(start, data);
+
+  return 0;
 }
 
 int recieveEnd(char* start)
