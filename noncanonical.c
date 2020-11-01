@@ -34,7 +34,7 @@ int readSet(int fd);
 int sendUA(int fd);
 
 int maximumFrameSize = 255;
-char data[255*2]; //TO DO problema ao ler o stuffing
+char data[255*2]; //TO DO tratar do tamanho disto
 int dataFrameNum = 0;
 int duplicate = 0;
 int dataProtocol(int fd);
