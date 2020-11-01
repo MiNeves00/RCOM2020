@@ -49,6 +49,11 @@ int readUA(int fd);
 
 int llopen(int porta,int flag);
 int llread(int fd, char* buffer);
+char* fileData;
+int fileSize;
+int cntFileBytesRead = 0;
+int ignore = 0;
+int saveFileData();
 int llclose(int porta);
 
 int recieveStart(char* filename, int filesize, char* start);
@@ -115,9 +120,9 @@ int main(int argc, char **argv)
   printf("%s\n", "New Termios Structure set");
 
 
-
+  data = malloc(maxFrameSize*2);
   llopen(fd,1);
-  dataProtocol(fd);
+  llread(fd,data);
   llclose(fd);
 
   //sleep(2);
@@ -242,7 +247,7 @@ int dataProtocol(int fd){
       sendRR(fd);
 
       if(duplicate == 0) //discard data if duplicate
-        llread(fd, &data);
+        saveFileData();
     }
     
   }
@@ -253,8 +258,8 @@ int dataProtocol(int fd){
 
 int readData(int fd){ //TO DO parte do Disc
 
-  memset(data, 0, 1000*2);
-  char tmpData[1000*2];
+  memset(data, 0, maxFrameSize*2);
+  char tmpData[maxFrameSize*2];
   char buf[1];
   printf("\n%s\n", "Waiting for Data...");
   int stop = 0;
@@ -639,30 +644,42 @@ int readUA(int fd)
 
 int llopen(int porta,int flag){
   setProtocol(porta);
-  data = malloc(maxFrameSize*2);
 }
 
 int llread(int fd, char* buffer)
 {
-  int filesize;
+  fileSize = 10968;
+  fileData = malloc(fileSize);
   
-  char *start, *filename;
+  dataProtocol(fd);
 
-  //data = malloc(maxFrameSize*2);
+}
 
-/*   if (readData(fd) == 0)
-  {
-    int c = data[0]; */
-  /*
-    if (c == 2)
-      recieveStart(filename, filesize, start);
+int saveFileData(){
 
-    if (c == 3)
-      recieveEnd(start);
-    */
-  //}
-  //TO DO ,guarda a data senao ela desaparece
-  printf("SAVED DATA\n");
+  if(ignore == 0){
+    ignore++;
+    return 0;
+  }else{
+    printf("Trying to save\n");
+    int numOfFrames = fileSize / maxFrameSize;
+    int bytesLeft = fileSize - (numOfFrames*maxFrameSize);
+    int bytes = 0;
+    if(cntFileBytesRead < fileSize){
+      if(cntFileBytesRead != (fileSize-bytesLeft)){
+        memcpy(fileData + cntFileBytesRead, data, maxFrameSize); //TO DO ver para a ultima frame
+        cntFileBytesRead += maxFrameSize;
+        bytes = maxFrameSize;
+      } else {
+        memcpy(fileData + cntFileBytesRead, data, bytesLeft);
+        cntFileBytesRead += bytesLeft;
+        bytes = bytesLeft;
+      }
+
+      printf("SAVED DATA -> %d | Total Bytes read %d\n", bytes, cntFileBytesRead);
+    } else
+      printf("Data ignored %d\n", cntFileBytesRead);
+  }
 }
 
 int recieveStart(char* filename, int filesize, char* start)
