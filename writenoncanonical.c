@@ -81,7 +81,7 @@ int main(int argc, char **argv)
        (strcmp("/dev/ttyS11", argv[1]) != 0) &&
        (strcmp("/dev/ttyS0", argv[1]) != 0) &&
        (strcmp("/dev/ttyS1", argv[1]) != 0) &&
-       (strcmp("/dev/ttyS4", argv[1]) != 0)))
+       (strcmp("/dev/ttyS5", argv[1]) != 0)))
   {
     printf("Usage:\tnserial SerialPort FileName FrameMaxSize FrameErrorRate<0-100>\n\tex: nserial /dev/ttyS10 pinguim.gif 256 10\n");
     exit(1);
