@@ -78,14 +78,19 @@ int main(int argc, char **argv)
 
   int i, sum = 0, speed = 0;
 
-  if ((argc < 2) ||
+  if ((argc < 4) ||
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
-       (strcmp("/dev/ttyS11", argv[1]) != 0)))
+       (strcmp("/dev/ttyS11", argv[1]) != 0) &&
+       (strcmp("/dev/ttyS0", argv[1]) != 0) &&
+       (strcmp("/dev/ttyS1", argv[1]) != 0)))
   {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS10\n");
+    printf("Usage:\tnserial SerialPort FileName FrameMaxSize\n\tex: nserial /dev/ttyS10 pinguim.gif 256\n");
     exit(1);
   } //TO DO receber filename por parametro
-
+  char* nameOfFile = argv[2];
+  char* p;
+  frameMaxSize = strtol(argv[3],p,10);
+  printf("size is %d\n", frameMaxSize);
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
@@ -134,7 +139,7 @@ int main(int argc, char **argv)
   globalData = malloc(frameMaxSize*2);
   llopen(10,0);
 
-  char* nameOfFile = "pinguim.gif";
+  
   llwrite(nameOfFile);
 
   llclose(fd);
