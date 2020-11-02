@@ -53,6 +53,7 @@ char* fileData;
 int fileSize;
 int cntFileBytesRead = 0;
 int ignore = 0;
+int numOfFrame = 0;
 int saveFileData(int fd);
 int writeToFile();
 
@@ -654,7 +655,6 @@ int llopen(int porta,int flag){
 
 int llread(int fd, char* buffer)
 {
-  //fileSize = 10968;
   data = malloc(maxFrameSize*2);
   recieveStart(fd);
   data = malloc(maxFrameSize*2);
@@ -684,8 +684,8 @@ int saveFileData(int fd){ //TO DO receber tudo em pacotes de aplicacoa
         cntFileBytesRead += bytesLeft;
         bytes = bytesLeft;
       }
-
-      printf("SAVED DATA -> %d | Total Bytes read %d\n", bytes, cntFileBytesRead);
+      numOfFrame++;
+      printf("SAVED DATA -> %d | Total Bytes read %d | Num of frame %d\n", bytes, cntFileBytesRead, numOfFrame);
     } else{
       printf("Data ignored %d\n", cntFileBytesRead);
       if(recieveEnd(fd) == 0)

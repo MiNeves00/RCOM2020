@@ -39,7 +39,8 @@ int setConnection();
 void sendSetWithAlarm();
 int readUA();
 
-int frameMaxSize = 256; //TO DO receber por parametro talvez
+int frameMaxSize = 256;
+double frameErrorRate = 0; //To begin error from 1 -> 100
 char* globalData;
 int currentDataSize = 0;
 int dataFrameNum = 0;
@@ -56,15 +57,12 @@ int sendUA();
 
 char openBuf[26];
 int llopen(int porta, int flag);
-struct applicationLayer { //TO DO aplicar disto e ter em conta a flag
-  int fileDescriptor;/*Descritor correspondente à porta série*/
-  int status;/*TRANSMITTER | RECEIVER*/
-} appLayer;
 
 
 
 int llwrite(char* filename);
 int sendStartOrEnd(char* filename, int start);
+int numOfFrame = 0;
 int sendFileData(char* filename);
 
 int llclose(int fd);
@@ -86,7 +84,7 @@ int main(int argc, char **argv)
   {
     printf("Usage:\tnserial SerialPort FileName FrameMaxSize\n\tex: nserial /dev/ttyS10 pinguim.gif 256\n");
     exit(1);
-  } //TO DO receber filename por parametro
+  }
   char* nameOfFile = argv[2];
   char* p;
   frameMaxSize = strtol(argv[3],p,10);
@@ -371,6 +369,13 @@ int sendDataWithAlarm(){
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
     } 
+
+    //FER - frame error rate
+    for( int i = 0; i < size; i++){
+      int random = rand() % 100 + 1; // 1 -> 100
+      if(random < frameErrorRate)
+        buf[i] = buf[i] ^ 0x0F;
+    }
 
     write(fd, buf, size);
 
@@ -738,6 +743,19 @@ int sendFileData(char* filename){
   int bytesLeft = filelen - (numFramesToSend*frameMaxSize);
   printf("Num of frames to send is %d\n", numFramesToSend);
 
+  char c = 1;
+  char n = 0;
+  unsigned char l2;
+  unsigned char l1;
+  if(frameMaxSize > 256){
+    l2 = frameMaxSize / 256;
+    l1 = frameMaxSize - (l2*256);
+  } else {
+    l2 = 0;
+    l1 = frameMaxSize;
+  } //TO DO
+
+
   currentDataSize = frameMaxSize;
   int j = 0;
 
@@ -748,13 +766,17 @@ int sendFileData(char* filename){
 
     transferData();
     j += currentDataSize;
-  }
+    numOfFrame++;
+    printf("Num of frame %d\n",numOfFrame);
+  } 
 
   if(bytesLeft>0){
   currentDataSize = bytesLeft;
   memset(globalData, 0, frameMaxSize*2);
   memcpy(globalData, buffer + j, bytesLeft);
   transferData();
+  numOfFrame++;
+   printf("Num of frame %d\n",numOfFrame);
   }
 
 
