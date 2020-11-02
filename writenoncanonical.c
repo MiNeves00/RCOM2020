@@ -40,7 +40,7 @@ void sendSetWithAlarm();
 int readUA();
 
 int frameMaxSize = 256;
-double frameErrorRate = 0; //To begin error from 1 -> 100
+double frameErrorRate = 100; //To begin error from 1 -> 10000
 char* globalData;
 int currentDataSize = 0;
 int dataFrameNum = 0;
@@ -371,11 +371,14 @@ int sendDataWithAlarm(){
     } 
 
     //FER - frame error rate
-    for( int i = 0; i < size; i++){
-      int random = rand() % 100 + 1; // 1 -> 100
-      if(random < frameErrorRate)
+/*     for( int i = 4; i < size-2; i++){
+      int random = rand() % 10000 + 1; // 1 -> 10000
+      if(random <= frameErrorRate)
         buf[i] = buf[i] ^ 0x0F;
-    }
+    } */
+    int random = rand() % 10000 + 1; // 1 -> 10000
+    if(random <= frameErrorRate)
+      buf[size-2] = buf[size-2] ^ 0x0F;
 
     write(fd, buf, size);
 
@@ -741,7 +744,10 @@ int sendFileData(char* filename){
   printf("File len is : %d\n",filelen);
   int numFramesToSend = filelen / frameMaxSize;
   int bytesLeft = filelen - (numFramesToSend*frameMaxSize);
-  printf("Num of frames to send is %d\n", numFramesToSend);
+  if(bytesLeft == 0)
+    printf("Num of frames to send is %d\n", numFramesToSend);
+  else
+    printf("Num of frames to send is %d\n", numFramesToSend+1);
 
   char c = 1;
   char n = 0;

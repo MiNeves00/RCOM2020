@@ -37,6 +37,7 @@ int maxFrameSize = 256; //default value, only for receiving start
 char *data;
 int dataFrameNum = 0;
 int duplicate = 0;
+int isStart = 0;
 int dataProtocol(int fd);
 int readData(int fd);
 int sendRR(int fd);
@@ -252,8 +253,9 @@ int dataProtocol(int fd){
     
     else{
       sendRR(fd);
-
-      if(duplicate == 0) //discard data if duplicate
+      if(isStart == 1)
+        STOP = TRUE;
+      if(duplicate == 0 && isStart == 0) //discard data if duplicate
         saveFileData(fd);
     }
     
@@ -666,10 +668,7 @@ int llread(int fd, char* buffer)
 
 int saveFileData(int fd){ //TO DO receber tudo em pacotes de aplicacoa
 
-  if(ignore == 0){
-    ignore++;
-    return 0;
-  }else{
+
     printf("Trying to save\n");
     int numOfFrames = fileSize / maxFrameSize;
     int bytesLeft = fileSize - (numOfFrames*maxFrameSize);
@@ -691,7 +690,7 @@ int saveFileData(int fd){ //TO DO receber tudo em pacotes de aplicacoa
       if(recieveEnd(fd) == 0)
         STOP = TRUE;
     }
-  }
+  
 }
 
 int writeToFile(){
@@ -714,8 +713,8 @@ int writeToFile(){
 int recieveStart(int fd)
 {
   printf("\nRecieving START...\n");
-
-  readData(fd);
+  isStart = 1;
+  dataProtocol(fd);
   
   char c = data[0];
   if(c != 2){
@@ -826,7 +825,7 @@ int recieveStart(int fd)
 
   start = malloc(startSize);
   strcpy(start, data);
-
+  isStart = 0;
   return 0;
 }
 
