@@ -33,7 +33,7 @@ int setProtocol(int fd);
 int readSet(int fd);
 int sendUA(int fd);
 
-int maxFrameSize = 256;
+int maxFrameSize = 256; //default value, only for receiving start
 char *data; //TO DO tratar do tamanho disto
 int dataFrameNum = 0;
 int duplicate = 0;
@@ -124,7 +124,6 @@ int main(int argc, char **argv)
   printf("%s\n", "New Termios Structure set");
 
 
-  data = malloc(maxFrameSize*2);
   llopen(fd,1);
   llread(fd,data);
   llclose(fd);
@@ -652,7 +651,10 @@ int llopen(int porta,int flag){
 
 int llread(int fd, char* buffer)
 {
-  fileSize = 10968;
+  //fileSize = 10968;
+  data = malloc(maxFrameSize*2);
+  recieveStart(fd);
+  data = malloc(maxFrameSize*2);
   fileData = malloc(fileSize);
   
   dataProtocol(fd);
@@ -691,9 +693,15 @@ int saveFileData(){ //TO DO receber tudo em pacotes de aplicacoa
 int writeToFile(){
   printf("writing\n");
   
+  int sizeName = strlen(fileName);
+  char* str = "./received";
+  char nameDest[sizeName+2];
+  strcpy(nameDest,str);
+  strcat(nameDest,fileName);
+
   FILE *fp;
 
-  fp = fopen("./test.gif", "w+");
+  fp = fopen(nameDest, "w+");
    
   printf("mega\n");
 
@@ -702,25 +710,35 @@ int writeToFile(){
   fwrite(fileData,1,fileSize,fp);
   fclose(fp); 
 }
+int chartobin(char *s, unsigned int *x) {
+    int len = strlen(s), bit;
+    *x = 0;
+    if(len>32 || len<1) return -1;
+    while(*s) {
+        bit = (*s++ - '0');
+        if((bit&(~1U))!=0) return -1;
+        if (bit) *x += (1<<(len-1));
+        len--;
+    }
+    return 0;
+}
 
 int recieveStart(int fd)
 {
   printf("\nRecieving START...\n");
-  char buf[32];
-  read(fd, buf, 32);
+
+  readData(fd);
   
-  char c = buf[4];
-  printf("C: %d",c);
+  char c = data[0];
   if(c != 2){
+    printf("Not a start frame");
     return 1;
   }
   //FILE SIZE
   char *v1;
 
-  int t1 = buf[5]; //type
-  printf("t1: %d",t1);
-  int l1 = buf[6]; //length
-  printf("l1: %d",t1);
+  int t1 = data[1]; //type
+  int l1 = data[2]; //length
 
   int n = 3;
 
@@ -728,14 +746,41 @@ int recieveStart(int fd)
 
   for (int i = 0; i < l1; i++)
   {
-    v1[i] = buf[n]; //value
+    v1[i] = data[n]; //value
     n++;
   }
-  fileSize = (int) v1;
+  
+  int aux0;
+  if(v1[0] < 0)
+    aux0 = (v1[0] & 0xFFFF) ^ 0xFF00;
+  else
+    aux0 = v1[0];
+
+  int aux1;
+  if(v1[1] < 0)
+    aux1 = (v1[1] & 0xFFFF) ^ 0xFF00;
+  else
+    aux1 = v1[1];
+  
+  int aux2;
+  if(v1[2] < 0)
+    aux2 = (v1[2] & 0xFFFF) ^ 0xFF00;
+  else
+    aux2 = v1[2];
+  int aux3;
+  if(v1[3] < 0)
+    aux3 = (v1[3] & 0xFFFF) ^ 0xFF00;
+  else
+    aux3 = v1[3];
+  
+
+  fileSize =  (aux0 << 24) | (aux1 << 16) | (aux2 << 8) | (aux3);
+  
+  printf("File size is %d\n",fileSize);
 
   //FILE NAME
-  int t2 = buf[n];
-  int l2 = buf[++n];
+  int t2 = data[n];
+  int l2 = data[++n];
 
   n++;
 
@@ -743,25 +788,51 @@ int recieveStart(int fd)
 
   for (int i = 0; i < l2; i++)
   {
-    fileName[i] = buf[n]; //value
+    fileName[i] = data[n]; //value
     n++;
   }
+
+  printf("Name is %s\n", fileName);
 
   //MaxFrameSize
   char *v3;
 
-  int t3 = buf[n]; //type
-  int l3 = buf[++n]; //length
+  int t3 = data[n]; //type
+  int l3 = data[++n]; //length
 
   n++;
   v3 = malloc(l3);
 
   for (int i = 0; i < l3; i++)
   {
-    v3[i] = buf[n]; //value
+    v3[i] = data[n]; //value
     n++;
   }
-  maxFrameSize = (int) v3;
+
+  if(v3[0] < 0)
+    aux0 = (v3[0] & 0xFFFF) ^ 0xFF00;
+  else
+    aux0 = v3[0];
+
+  if(v3[1] < 0)
+    aux1 = (v3[1] & 0xFFFF) ^ 0xFF00;
+  else
+    aux1 = v3[1];
+  
+  if(v3[2] < 0)
+    aux2 = (v3[2] & 0xFFFF) ^ 0xFF00;
+  else
+    aux2 = v3[2];
+
+  if(v3[3] < 0)
+    aux3 = (v3[3] & 0xFFFF) ^ 0xFF00;
+  else
+    aux3 = v3[3];
+  
+
+  maxFrameSize =  (aux0 << 24) | (aux1 << 16) | (aux2 << 8) | (aux3);
+  
+  printf("Max frame size is %d\n",maxFrameSize);
 
   printf("\nSTART Recieved!\n");
 

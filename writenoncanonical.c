@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <string.h>
 
@@ -632,7 +633,7 @@ int llwrite(char* filename){
 
 int sendStartOrEnd(char* filename, int start){
 
-  memset(openBuf, 0, 18);
+  memset(openBuf, 0, 26);
   char c; //Slide 23
   if(start == 1){
   printf("\nSending Start...\n");
@@ -649,18 +650,16 @@ int sendStartOrEnd(char* filename, int start){
   strcpy(nameDest,str);
   strcat(nameDest,filename);
 
-
   struct stat st;
   if(stat(nameDest,&st) == -1){
     printf("\nError reading the file\n");
   return -1;
   }
   off_t fileSize = st.st_size;
-
+  
   char t1 = 0b00000000; //tamanho ficheiro
   char l1 = 0b00000100; //tamanho v
   int v1 = (int)(fileSize); 
-
   char t2 = 0b00000001; //nome
   char l2 = 0b00001011;
   char v2[sizeName];
@@ -674,11 +673,12 @@ int sendStartOrEnd(char* filename, int start){
 
   openBuf[1] = t1;
   openBuf[2] = l1;
+  
+  int x = (v1) & 0xFF;
   openBuf[3] = (v1 >> 24) & 0xFF;
   openBuf[4] = (v1 >> 16) & 0xFF;
   openBuf[5] = (v1 >> 8) & 0xFF;
   openBuf[6] = (v1) & 0xFF;
-  
   openBuf[7] = t2;
   openBuf[8] = l2;
   openBuf[9] = v2[0];
