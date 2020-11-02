@@ -40,7 +40,7 @@ void sendSetWithAlarm();
 int readUA();
 
 int frameMaxSize = 256;
-double frameErrorRate = 100; //To begin error from 1 -> 10000
+int frameErrorRate = 0; //To begin error from 1 -> 100
 char* globalData;
 int currentDataSize = 0;
 int dataFrameNum = 0;
@@ -76,19 +76,20 @@ int main(int argc, char **argv)
 
   int i, sum = 0, speed = 0;
 
-  if ((argc < 4) ||
+  if ((argc < 5) ||
       ((strcmp("/dev/ttyS10", argv[1]) != 0) &&
        (strcmp("/dev/ttyS11", argv[1]) != 0) &&
        (strcmp("/dev/ttyS0", argv[1]) != 0) &&
        (strcmp("/dev/ttyS1", argv[1]) != 0)))
   {
-    printf("Usage:\tnserial SerialPort FileName FrameMaxSize\n\tex: nserial /dev/ttyS10 pinguim.gif 256\n");
+    printf("Usage:\tnserial SerialPort FileName FrameMaxSize FrameErrorRate<0-100>\n\tex: nserial /dev/ttyS10 pinguim.gif 256 10\n");
     exit(1);
   }
   char* nameOfFile = argv[2];
   char* p;
   frameMaxSize = strtol(argv[3],p,10);
-  printf("size is %d\n", frameMaxSize);
+  char* m;
+  frameErrorRate = strtol(argv[4],m,10);
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
@@ -376,7 +377,7 @@ int sendDataWithAlarm(){
       if(random <= frameErrorRate)
         buf[i] = buf[i] ^ 0x0F;
     } */
-    int random = rand() % 10000 + 1; // 1 -> 10000
+    int random = rand() % 100 + 1; // 1 -> 100
     if(random <= frameErrorRate)
       buf[size-2] = buf[size-2] ^ 0x0F;
 
