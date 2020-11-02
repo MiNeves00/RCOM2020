@@ -254,10 +254,11 @@ void sendSetWithAlarm() // atende alarme
     buf[0] = flag;
 
     printf("%s\n", "Sending SET...");
-    for (size_t i = 0; i < 5; i++)
+/* COMMENT
+     for (size_t i = 0; i < 5; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
+    } */
 
     write(fd, buf, 5);
 
@@ -365,11 +366,12 @@ int sendDataWithAlarm(){
 
     printf("%s", "Sending Data...");
     int size = ++n;
+/* COMMENT
     printf("\n%s%d ->", "Size: ", size);
      for (size_t i = 0; i < size; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    } 
+    }  */
 
     //FER - frame error rate
 /*     for( int i = 4; i < size-2; i++){
@@ -516,10 +518,11 @@ int sendDisconnectWithAlarm()
     buf[0] = flag;
 
     printf("%s\n", "Sending DISC...");
+/* COMMENT
     for (size_t i = 0; i < 5; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
+    } */
 
     write(fd, buf, 5);
 
@@ -604,10 +607,11 @@ int sendUA()
   buf[2] = controlUA;
   buf[1] = addressUA;
   buf[0] = flagUA;
+/* COMMENT
   for (size_t i = 0; i < 5; i++)
   {
     printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-  }
+  } */
 
   res = write(fd, buf, 5);
   printf("%s\n", "\nUA sent!");

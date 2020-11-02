@@ -172,10 +172,11 @@ int sendUA(int fd)
   buf[2] = controlUA;
   buf[1] = addressUA;
   buf[0] = flagUA;
+/* COMMENT
   for (size_t i = 0; i < 5; i++)
   {
     printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-  }
+  } */
 
   res = write(fd, buf, 5);
   printf("%s\n", "\nUA sent!");
@@ -323,7 +324,8 @@ int readData(int fd){
               } else {
                 tmpData[i] = bcc2;
                 bcc2 = buf[0];
-                printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(tmpData[i]));
+                /* COMMENT 
+                printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(tmpData[i])); */
               }
               i++;
             }
@@ -372,9 +374,10 @@ int readData(int fd){
 
               n++;
             }
+/* COMMENT
             printf("\nData after Destuffing:\n");
             for(int w = 0; w < n; w++)
-              printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(data[w]));
+              printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(data[w])); */
 
             if(bcc2 != xor){
               printf("BCC2 shows errors in data fields!\n");
@@ -425,10 +428,11 @@ int sendRR(int fd){
   buf[2] = controlRR;
   buf[1] = addressRR;
   buf[0] = flagRR;
+/* COMMENT
   for (size_t i = 0; i < 5; i++)
   {
     printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-  }
+  } */
 
   res = write(fd, buf, 5);
   printf("\nRR with R = %d sent!\n", dataFrameNum);
@@ -455,10 +459,11 @@ int sendREJ(int fd){
   buf[2] = controlREJ;
   buf[1] = addressREJ;
   buf[0] = flagREJ;
+/* COMMENT
   for (size_t i = 0; i < 5; i++)
   {
     printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-  }
+  } */
 
   res = write(fd, buf, 5);
   printf("\nREJ with R = %d sent!\n", dataFrameNum);
@@ -573,10 +578,11 @@ int sendDiscWithAlarm(int fd)
     buf[2] = control;
     buf[1] = address;
     buf[0] = flag;
+/* COMMENT
     for (size_t i = 0; i < 5; i++)
     {
       printf(" " BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(buf[i]));
-    }
+    } */
 
     res = write(fd, buf, 5);
     printf("%s\n", "\nDISC sent!");
