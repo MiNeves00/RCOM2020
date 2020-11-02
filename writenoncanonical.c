@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   char* p;
   frameMaxSize = strtol(argv[3],p,10);
   char* m;
-  frameErrorRate = strtol(argv[4],m,10);
+  //frameErrorRate = strtol(argv[4],m,10);
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
