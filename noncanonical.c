@@ -34,7 +34,7 @@ int readSet(int fd);
 int sendUA(int fd);
 
 int maxFrameSize = 256; //default value, only for receiving start
-char *data; //TO DO tratar do tamanho disto
+char *data;
 int dataFrameNum = 0;
 int duplicate = 0;
 int dataProtocol(int fd);
@@ -53,15 +53,16 @@ char* fileData;
 int fileSize;
 int cntFileBytesRead = 0;
 int ignore = 0;
-int saveFileData();
+int saveFileData(int fd);
 int writeToFile();
 
 int llclose(int porta);
 
 char* start;
 char* fileName;
+int startSize;
 int recieveStart(int fd);
-int recieveEnd(char* start);
+int recieveEnd(int fd);
 
 int nAlarm = 0;
 
@@ -250,7 +251,7 @@ int dataProtocol(int fd){
       sendRR(fd);
 
       if(duplicate == 0) //discard data if duplicate
-        saveFileData();
+        saveFileData(fd);
     }
     
   }
@@ -661,7 +662,7 @@ int llread(int fd, char* buffer)
   writeToFile();
 }
 
-int saveFileData(){ //TO DO receber tudo em pacotes de aplicacoa
+int saveFileData(int fd){ //TO DO receber tudo em pacotes de aplicacoa
 
   if(ignore == 0){
     ignore++;
@@ -673,7 +674,7 @@ int saveFileData(){ //TO DO receber tudo em pacotes de aplicacoa
     int bytes = 0;
     if(cntFileBytesRead < fileSize){
       if(cntFileBytesRead != (fileSize-bytesLeft)){
-        memcpy(fileData + cntFileBytesRead, data, maxFrameSize); //TO DO ver para a ultima frame
+        memcpy(fileData + cntFileBytesRead, data, maxFrameSize);
         cntFileBytesRead += maxFrameSize;
         bytes = maxFrameSize;
       } else {
@@ -685,42 +686,27 @@ int saveFileData(){ //TO DO receber tudo em pacotes de aplicacoa
       printf("SAVED DATA -> %d | Total Bytes read %d\n", bytes, cntFileBytesRead);
     } else{
       printf("Data ignored %d\n", cntFileBytesRead);
-      STOP = TRUE;
+      if(recieveEnd(fd) == 0)
+        STOP = TRUE;
     }
   }
 }
 
 int writeToFile(){
-  printf("writing\n");
+  printf("Writing file data to File:");
   
   int sizeName = strlen(fileName);
   char* str = "./received";
   char nameDest[sizeName+2];
   strcpy(nameDest,str);
   strcat(nameDest,fileName);
-
+  printf(" %s\n", nameDest);
   FILE *fp;
 
   fp = fopen(nameDest, "w+");
    
-  printf("mega\n");
-
-  printf("writing\n");
-  
   fwrite(fileData,1,fileSize,fp);
   fclose(fp); 
-}
-int chartobin(char *s, unsigned int *x) {
-    int len = strlen(s), bit;
-    *x = 0;
-    if(len>32 || len<1) return -1;
-    while(*s) {
-        bit = (*s++ - '0');
-        if((bit&(~1U))!=0) return -1;
-        if (bit) *x += (1<<(len-1));
-        len--;
-    }
-    return 0;
 }
 
 int recieveStart(int fd)
@@ -740,14 +726,14 @@ int recieveStart(int fd)
   int t1 = data[1]; //type
   int l1 = data[2]; //length
 
-  int n = 3;
+  startSize = 3;
 
   v1 = malloc(l1);
 
   for (int i = 0; i < l1; i++)
   {
-    v1[i] = data[n]; //value
-    n++;
+    v1[i] = data[startSize]; //value
+    startSize++;
   }
   
   int aux0;
@@ -779,17 +765,17 @@ int recieveStart(int fd)
   printf("File size is %d\n",fileSize);
 
   //FILE NAME
-  int t2 = data[n];
-  int l2 = data[++n];
+  int t2 = data[startSize];
+  int l2 = data[++startSize];
 
-  n++;
+  startSize++;
 
   fileName = malloc(l2);
 
   for (int i = 0; i < l2; i++)
   {
-    fileName[i] = data[n]; //value
-    n++;
+    fileName[i] = data[startSize]; //value
+    startSize++;
   }
 
   printf("Name is %s\n", fileName);
@@ -797,16 +783,16 @@ int recieveStart(int fd)
   //MaxFrameSize
   char *v3;
 
-  int t3 = data[n]; //type
-  int l3 = data[++n]; //length
+  int t3 = data[startSize]; //type
+  int l3 = data[++startSize]; //length
 
-  n++;
+  startSize++;
   v3 = malloc(l3);
 
   for (int i = 0; i < l3; i++)
   {
-    v3[i] = data[n]; //value
-    n++;
+    v3[i] = data[startSize]; //value
+    startSize++;
   }
 
   if(v3[0] < 0)
@@ -836,47 +822,30 @@ int recieveStart(int fd)
 
   printf("\nSTART Recieved!\n");
 
-  start = malloc(n);
+  start = malloc(startSize);
   strcpy(start, data);
 
   return 0;
 }
 
-int recieveEnd(char* start)
+int recieveEnd(int fd)
 {
-  char *v1;
-
-  printf("\nRecieving END...\n");
-
-  int t1 = data[1]; //type
-  int l1 = data[2]; //length
-
-  int n = 3;
-
-  v1 = malloc(l1);
-
-  for (int i = 0; i < l1; i++)
-  {
-    v1[i] = data[n]; //value
-    n++;
+  printf("\nRecieving End...\n");
+  
+  char c = data[0];
+  if(c != 3){
+    printf("Not a end frame");
+    return 1;
   }
-
-  int t2 = data[n];
-  int l2 = data[++n];
-
-  n++; //nao sei se e necessario
-
-  n += l2;
-
-  printf("\nEND Recieved!\n");
-  /*
-  if (strncmp(start, data, n) != 0)
+  
+  if (strncmp(start+1, data+1, startSize-1) != 0)
   {
     printf("\nEND different from START\n");
     return 1;
   }
-  */
-  printf("\nEND Recieved!\n");
+  
+  printf("\nEND Recieved and value is correct!\n");
+  return 0;
 }
 
 int llclose(int porta){
