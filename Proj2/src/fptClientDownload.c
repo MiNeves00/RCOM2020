@@ -14,17 +14,24 @@
 #define SERVER_PORT 21
 #define SERVER_ADDR "192.168.28.96"
 #define STRING_MAX_LENGTH 50
-#define SOCK_BUFFER_SIZE 1000
+#define SOCK_BUFFER_LENGTH 1000
 
 int parseArguments(char *arg, char *user, char *pass, char *host, char *path);
 void serverConnect(int *fd, char* serverAdress, struct sockaddr_in server_addr);
 void parseNameOfFile(char *path, char *nameFile);
 
 //READ RESPONSE
-void readResponse(int sockfd, char *responseCode);
+void getResponseCode(int sockfd, char *responseCode);
 void threeDigitNumResponse(int *index, char ch, int *state, char *responseCode);
 void multipleLinesResponse(int *index, char ch, int *state, char *responseCode);
 void oneLineResponse(char ch, int *state);
+
+//COMMAND
+void sendCommand(int sockfd, char cmd[], char commandContent[]);
+void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile, char responseCode);
+int analyseResponse(int sockfd, char cmd[], char commandContent[], char* nameOfFile, int sockfdClient);
+
+int getServerDataConnectionPort(int sockfd);
 
 int main(int argc, char** argv){
 
@@ -73,12 +80,24 @@ int main(int argc, char** argv){
 	serverConnect(&sockfd, ipAdd, server_addr);
 
 
-	readResponse(sockfd, responseCode); 
+	getResponseCode(sockfd, responseCode); 
 	if (responseCode[0] == '2')
 	{										 
 		printf(" > Connected Succesfully\n"); 
 	}	
 
+	printf(" > Sending User\n");
+	sendCommand(sockfd, "user ", username);
+
+	if (analyseResponse(sockfd, "user ", username, filename, sockfdClient))
+	{
+		printf(" > Sending Password\n");
+		sendCommand(sockfd, "pass ", password);
+		analyseResponse(sockfd, "pass ", password, filename, sockfdClient);
+	}
+
+	write(sockfd, "pasv\n", 5);
+	int serverPort = getServerDataConnectionPort(sockfd);
 
 	close(sockfd);
 	exit(0);
@@ -258,7 +277,6 @@ void oneLineResponse(char ch, int *state){
 			}
 }
 
-//reads response code from the server
 void getResponseCode(int sockfd, char *responseCode)
 {
 	int state = 0;
@@ -280,7 +298,6 @@ void getResponseCode(int sockfd, char *responseCode)
 			multipleLinesResponse(&index,ch,&state,responseCode);
 			break;
 
-		//next line
 		case 2:
 			oneLineResponse(ch,&state);
 			break;
@@ -291,4 +308,144 @@ void getResponseCode(int sockfd, char *responseCode)
 	}
 }
 
+void sendCommand(int sockfd, char cmd[], char commandContent[]){
+	write(sockfd, cmd, strlen(cmd));
+	write(sockfd, commandContent, strlen(commandContent));
+	write(sockfd, "\n", 1);
+}
+
+void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile, char responseCode){
+	if(strcmp(cmd, "retr ")==0){
+
+			FILE *file = fopen((char *)nameOfFile, "wb+");
+
+			char bufferSock[SOCK_BUFFER_LENGTH];
+			int info;
+			while ((info = read(sockfdClient, bufferSock, SOCK_BUFFER_LENGTH))>0) {
+				info = fwrite(bufferSock, info, 1, file);
+			}
+
+			fclose(file);
+
+			printf(" > File Downloaded!\n");
+		return;
+	}
+	getResponseCode(sockfd, responseCode);
+	return;
+}
+
+int analyseResponse(int sockfd, char cmd[], char commandContent[], char* nameOfFile, int sockfdClient)
+{
+	char responseCode[3];
+	int state = 0;
+	while (1)
+	{
+		getResponseCode(sockfd, responseCode);
+		state = responseCode[0] - '0';
+
+		switch (state)
+		{
+		case 1:
+			waitNextResponse(sockfd, cmd, sockfdClient, nameOfFile, responseCode);
+			break;
+		//successfull
+		case 2:
+			return 0;
+		//waiting for more info
+		case 3:
+			return 1;
+		//try again
+		case 4:
+			sendCommand(sockfd, cmd, commandContent);
+			break;
+		default:
+			printf(" > Error in command!\n");
+			close(sockfd);
+			exit(-1);
+			break;
+		}
+	}
+}
+
+int getServerDataConnectionPort(int sockfd){ //Tal como demonstrado na experiencia ftp
+
+	char byte1[4];
+	memset(byte1, 0, 4);
+	char byte2[4];
+	memset(byte2, 0, 4);
+	int state = 0;
+	int pos = 0;
+	int commaNum = 0;
+
+	char ch;
+	int loop = 1;
+
+	while(loop){
+
+		read(sockfd, &ch, 1);
+		printf("%c", ch);
+
+		switch (state){
+			case 0:
+				if (ch != ' ')
+				{
+					pos++;
+					break;
+				}
+
+				if (pos != 3)
+				{
+					printf(" > Error in response code\n");
+					return -1;
+				}
+				pos = 0;
+				state = 1;
+				break;
+
+			case 1:
+				if(commaNum == 4){
+					state = 2;
+					break;
+				}
+				if (ch == ',')
+				{
+					commaNum++;
+				}
+				break;
+
+			case 2:
+				if (ch != ',')
+				{
+					byte1[pos] = ch;
+					pos++;
+					break;
+				}
+				pos = 0;
+				commaNum++;
+				state = 3;
+				break;
+
+			case 3:
+				if (ch == ')')
+				{
+					loop = 0;
+					break;
+				}
+					byte2[pos] = ch;
+					pos++;
+			
+				break;
+
+		}
+
+
+
+	}
+
+	int actualByte1 = atoi(byte1);
+	int actualByte2 = atoi(byte2);
+	return (actualByte1 * 256 + actualByte2);
+
+
+}
 

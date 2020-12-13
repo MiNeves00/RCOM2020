@@ -14,7 +14,7 @@
 #define SERVER_PORT 21
 #define SERVER_ADDR "192.168.28.96"
 #define STRING_MAX_LENGTH 50
-#define SOCK_BUFFER_SIZE 1000
+#define SOCK_BUFFER_LENGTH 1000
 
 void readResponse(int sockfd, char *responseCode);
 struct hostent *getip(char host[]);
@@ -311,63 +311,63 @@ void readResponse(int sockfd, char *responseCode)
 int getServerPortFromResponse(int sockfd)
 {
 	int state = 0;
-	int index = 0;
-	char firstByte[4];
-	memset(firstByte, 0, 4);
-	char secondByte[4];
-	memset(secondByte, 0, 4);
+	int pos = 0;
+	char byte1[4];
+	memset(byte1, 0, 4);
+	char byte2[4];
+	memset(byte2, 0, 4);
 
-	char c;
+	char ch;
 
 	while (state != 7)
 	{
-		read(sockfd, &c, 1);
-		printf("%c", c);
+		read(sockfd, &ch, 1);
+		printf("%c", ch);
 		switch (state)
 		{
 		//waits for 3 digit number followed by ' '
 		case 0:
-			if (c == ' ')
+			if (ch == ' ')
 			{
-				if (index != 3)
+				if (pos != 3)
 				{
 					printf(" > Error receiving response code\n");
 					return -1;
 				}
-				index = 0;
+				pos = 0;
 				state = 1;
 			}
 			else
 			{
-				index++;
+				pos++;
 			}
 			break;
 		case 5:
-			if (c == ',')
+			if (ch == ',')
 			{
-				index = 0;
+				pos = 0;
 				state++;
 			}
 			else
 			{
-				firstByte[index] = c;
-				index++;
+				byte1[pos] = ch;
+				pos++;
 			}
 			break;
 		case 6:
-			if (c == ')')
+			if (ch == ')')
 			{
 				state++;
 			}
 			else
 			{
-				secondByte[index] = c;
-				index++;
+				byte2[pos] = ch;
+				pos++;
 			}
 			break;
 		//reads until the first comma
 		default:
-			if (c == ',')
+			if (ch == ',')
 			{
 				state++;
 			}
@@ -375,8 +375,8 @@ int getServerPortFromResponse(int sockfd)
 		}
 	}
 
-	int firstByteInt = atoi(firstByte);
-	int secondByteInt = atoi(secondByte);
+	int firstByteInt = atoi(byte1);
+	int secondByteInt = atoi(byte2);
 	return (firstByteInt * 256 + secondByteInt);
 }
 
@@ -430,9 +430,9 @@ void createFile(int fd, char* filename)
 {
 	FILE *file = fopen((char *)filename, "wb+");
 
-	char bufSocket[SOCK_BUFFER_SIZE];
+	char bufSocket[SOCK_BUFFER_LENGTH];
  	int bytes;
- 	while ((bytes = read(fd, bufSocket, SOCK_BUFFER_SIZE))>0) {
+ 	while ((bytes = read(fd, bufSocket, SOCK_BUFFER_LENGTH))>0) {
     	bytes = fwrite(bufSocket, bytes, 1, file);
     }
 
