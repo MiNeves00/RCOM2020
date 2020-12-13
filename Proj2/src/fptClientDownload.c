@@ -33,6 +33,7 @@ int analyseResponse(int sockfd, char cmd[], char commandContent[], char* nameOfF
 
 int getServerDataConnectionPort(int sockfd);
 
+
 int main(int argc, char** argv){
 
 
@@ -86,12 +87,12 @@ int main(int argc, char** argv){
 		printf(" > Connected Succesfully\n"); 
 	}	
 
-	printf(" > Sending User\n");
+	printf(" > Sending User Command\n");
 	sendCommand(sockfd, "user ", username);
 
 	if (analyseResponse(sockfd, "user ", username, filename, sockfdClient))
 	{
-		printf(" > Sending Password\n");
+		printf(" > Sending Password Command\n");
 		sendCommand(sockfd, "pass ", password);
 		analyseResponse(sockfd, "pass ", password, filename, sockfdClient);
 	}
@@ -99,6 +100,22 @@ int main(int argc, char** argv){
 	write(sockfd, "pasv\n", 5);
 	int serverPort = getServerDataConnectionPort(sockfd);
 
+	serverConnect(sockfdClient, ipAdd, server_addr_client);
+
+	printf("\n > Sending Retrival Command\n");
+	sendCommand(sockfd, "retr ", path);
+	int responseRetr =analyseResponse(sockfd, "retr ", path, filename, sockfdClient);
+
+	close(sockfdClient);
+	close(sockfd);
+
+	if(responseRetr!=0){
+		printf(" > ERROR in RETR response\n");
+		exit(1);
+	}
+
+
+	close(sockfdClient);
 	close(sockfd);
 	exit(0);
 }
