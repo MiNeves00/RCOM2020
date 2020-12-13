@@ -17,7 +17,7 @@
 #define SOCK_BUFFER_LENGTH 1000
 
 int parseArguments(char *arg, char *user, char *pass, char *host, char *path);
-void serverConnect(int *fd, char* serverAdress, struct sockaddr_in server_addr);
+void serverConnect(int *fd, char* serverAdress, struct sockaddr_in server_addr, int serverPort);
 void parseNameOfFile(char *path, char *nameFile);
 
 //READ RESPONSE
@@ -28,7 +28,7 @@ void oneLineResponse(char ch, int *state);
 
 //COMMAND
 void sendCommand(int sockfd, char cmd[], char commandContent[]);
-void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile, char responseCode);
+void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile, char *responseCode);
 int analyseResponse(int sockfd, char cmd[], char commandContent[], char* nameOfFile, int sockfdClient);
 
 int getServerDataConnectionPort(int sockfd);
@@ -78,7 +78,7 @@ int main(int argc, char** argv){
 	printf(" -> Filename : %s\n", filename);
     printf(" -> IP Address : %s\n\n", ipAdd);
 
-	serverConnect(&sockfd, ipAdd, server_addr);
+	serverConnect(&sockfd, ipAdd, server_addr, SERVER_PORT);
 
 
 	getResponseCode(sockfd, responseCode); 
@@ -99,8 +99,9 @@ int main(int argc, char** argv){
 
 	write(sockfd, "pasv\n", 5);
 	int serverPort = getServerDataConnectionPort(sockfd);
+	printf("SERVER PORT %d\n", serverPort);
 
-	serverConnect(sockfdClient, ipAdd, server_addr_client);
+	serverConnect(&sockfdClient, ipAdd, server_addr_client, serverPort);
 
 	printf("\n > Sending Retrival Command\n");
 	sendCommand(sockfd, "retr ", path);
@@ -216,13 +217,13 @@ int parseArguments(char *arg, char *user, char *pass, char *host, char *path)
 	return 0;
 }
 
-void serverConnect(int *fd, char* serverAdress, struct sockaddr_in server_addr){
+void serverConnect(int *fd, char* serverAdress, struct sockaddr_in server_addr, int serverPort){
 
 	/*server address handling*/
 	bzero((char*)&server_addr,sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = inet_addr(serverAdress);	/*32 bit Internet address network byte ordered*/
-	server_addr.sin_port = htons(SERVER_PORT);		/*server TCP port must be network byte ordered */
+	server_addr.sin_port = htons(serverPort);		/*server TCP port must be network byte ordered */
     
 	/*open an TCP socket*/
 	if ((*fd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
@@ -307,15 +308,18 @@ void getResponseCode(int sockfd, char *responseCode)
 		switch (state)
 		{
 		case 0:
+			
 			threeDigitNumResponse(&index,ch,&state,responseCode);
 			break;
 
 		
 		case 1:
+			
 			multipleLinesResponse(&index,ch,&state,responseCode);
 			break;
 
 		case 2:
+			
 			oneLineResponse(ch,&state);
 			break;
 		
@@ -325,15 +329,15 @@ void getResponseCode(int sockfd, char *responseCode)
 	}
 }
 
+
 void sendCommand(int sockfd, char cmd[], char commandContent[]){
 	write(sockfd, cmd, strlen(cmd));
 	write(sockfd, commandContent, strlen(commandContent));
 	write(sockfd, "\n", 1);
 }
 
-void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile, char responseCode){
+void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile, char *responseCode){
 	if(strcmp(cmd, "retr ")==0){
-
 			FILE *file = fopen((char *)nameOfFile, "wb+");
 
 			char bufferSock[SOCK_BUFFER_LENGTH];
@@ -353,16 +357,18 @@ void waitNextResponse(int sockfd, char cmd[], int sockfdClient, char* nameOfFile
 
 int analyseResponse(int sockfd, char cmd[], char commandContent[], char* nameOfFile, int sockfdClient)
 {
+	
 	char responseCode[3];
 	int state = 0;
 	while (1)
 	{
 		getResponseCode(sockfd, responseCode);
 		state = responseCode[0] - '0';
-
+		
 		switch (state)
 		{
 		case 1:
+			printf(" > Waiting Next Response...\n");
 			waitNextResponse(sockfd, cmd, sockfdClient, nameOfFile, responseCode);
 			break;
 		//successfull
@@ -420,13 +426,14 @@ int getServerDataConnectionPort(int sockfd){ //Tal como demonstrado na experienc
 				break;
 
 			case 1:
-				if(commaNum == 4){
-					state = 2;
-					break;
-				}
 				if (ch == ',')
 				{
 					commaNum++;
+					if(commaNum == 4){
+						state = 2;
+						pos = 0;
+						break;
+					}
 				}
 				break;
 
