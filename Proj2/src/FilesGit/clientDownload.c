@@ -19,7 +19,7 @@
 void readResponse(int sockfd, char *responseCode);
 struct hostent *getip(char host[]);
 void createFile(int fd, char* filename);
-void parseArgument(char *argument, char *username, char *password, char *host, char *path);
+void parseArguments(char *argument, char *username, char *password, char *host, char *path);
 int sendCommandInterpretResponse(int sockfd, char cmd[], char commandContent[], char* filename, int sockfdClient);
 int getServerPortFromResponse(int sockfd);
 void parseFilename(char *path, char *filename);
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 	char path[STRING_MAX_LENGTH];
 	memset(path, 0, STRING_MAX_LENGTH);
-	parseArgument(argv[1], username, password, host, path);
+	parseArguments(argv[1], username, password, host, path);
 
 	char filename[STRING_MAX_LENGTH];
 	parseFilename(path, filename);
@@ -87,11 +87,11 @@ int main(int argc, char **argv)
 	}										 
 
 	printf(" > Sending Username\n");
-	int res = sendCommandInterpretResponse(sockfd, "username ", username, filename, sockfdClient);
+	int res = sendCommandInterpretResponse(sockfd, "user ", username, filename, sockfdClient);
 	if (res == 1)
 	{
 		printf(" > Sending Password\n");
-		res = sendCommandInterpretResponse(sockfd, "password ", password, filename, sockfdClient);
+		res = sendCommandInterpretResponse(sockfd, "pass ", password, filename, sockfdClient);
 	}
 
 	write(sockfd, "pasv\n", 5);
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 }
 
 // ./download ftp://anonymous:1@speedtest.tele2.net/1KB.zip
-void parseArgument(char *argument, char *username, char *password, char *host, char *path)
+void parseArguments(char *argument, char *username, char *password, char *host, char *path)
 {
 	char start[] = "ftp://";
 	int index = 0;
