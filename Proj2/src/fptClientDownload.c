@@ -99,7 +99,6 @@ int main(int argc, char** argv){
 
 	write(sockfd, "pasv\n", 5);
 	int serverPort = getServerDataConnectionPort(sockfd);
-	printf("SERVER PORT %d\n", serverPort);
 
 	serverConnect(&sockfdClient, ipAdd, server_addr_client, serverPort);
 
